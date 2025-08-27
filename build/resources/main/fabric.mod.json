@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "argest",
+  "version": "0.1-alpha",
+  "name": "argest",
+  "description": "",
+  "authors": ["AlmazmanElytra", "stargest"],
+  "contact": {},
+  "license": "GPLv3",
+  "icon": "assets/argest/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "org.BlueWallStudio.argest.client.ArgestDataGenerator"
+    ],
+    "client": [
+      "org.BlueWallStudio.argest.client.ArgestClient"
+    ],
+    "main": [
+      "org.BlueWallStudio.argest.Argest"
+    ]
+  },
+  "mixins": [
+    "argest.mixins.json",
+    {
+      "config": "argest.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.17.2",
+    "fabric": "*",
+    "minecraft": "1.21.4"
+  }
+}
