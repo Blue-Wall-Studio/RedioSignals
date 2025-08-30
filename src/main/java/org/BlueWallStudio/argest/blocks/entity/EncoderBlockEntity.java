@@ -8,16 +8,26 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.BlueWallStudio.argest.blocks.EncoderBlock;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
-import org.BlueWallStudio.argest.signal.*;
+import org.BlueWallStudio.argest.signal.SignalManager;
+import org.BlueWallStudio.argest.signal.SignalPacket;
+import org.BlueWallStudio.argest.signal.SignalType;
 import org.BlueWallStudio.argest.wire.WireDetector;
 
-import java.util.*;
+import java.util.EnumMap;
+import java.util.EnumSet;
 
-public class EncoderBlockEntity extends BlockEntity{
-    private Map<Direction, Integer> inputPowers = new HashMap<>();
-    private Set<Direction> outputDirections = new HashSet<>();
-    private Map<Direction, ConnectionType> connections = new HashMap<>();
+// EncoderBlockEntity.java
+public class EncoderBlockEntity extends BlockEntity {
+    // Use EnumMap/EnumSet for Direction-keyed collections (fast + compact)
+    private final EnumMap<Direction, Integer> inputPowers = new EnumMap<>(Direction.class);
+    private final EnumMap<Direction, ConnectionType> connections = new EnumMap<>(Direction.class);
+    private final EnumSet<Direction> outputDirections = EnumSet.noneOf(Direction.class);
+
+    private static final int CONNECTION_UPDATE_INTERVAL = 20;
+    private static final int INPUT_PROCESS_INTERVAL = 10;
+
     private int tickCounter = 0;
     private boolean needsConnectionUpdate = true;
 
@@ -33,36 +43,45 @@ public class EncoderBlockEntity extends BlockEntity{
         }
     }
 
-    public static void tick(World world, BlockPos pos, BlockState state, EncoderBlockEntity entity) {
+    /**
+     * Server tick entrypoint.
+     */
+    public static void tick(World world, BlockPos ignoredPos, BlockState ignoredState, EncoderBlockEntity entity) {
         if (world.isClient) return;
-
         entity.tickCounter++;
 
-        // Обновляем подключения каждые 20 тиков или при необходимости
-        if (entity.needsConnectionUpdate || entity.tickCounter % 20 == 0) {
-            entity.updateConnections(world);
+        // Connections update periodically or when flagged dirty
+        if (entity.needsConnectionUpdate || entity.tickCounter % CONNECTION_UPDATE_INTERVAL == 0) {
+            entity.updateConnections((ServerWorld) world);
             entity.needsConnectionUpdate = false;
         }
 
-        // Обрабатываем сигналы каждые 10 тиков
-        if (entity.tickCounter % 10 == 0) {
-            entity.updateInputs(world);
-            entity.tryTransmitSignal(world);
+        // Process inputs + try to transmit every INPUT_PROCESS_INTERVAL ticks
+        if (entity.tickCounter % INPUT_PROCESS_INTERVAL == 0) {
+            entity.updateInputs((ServerWorld) world);
+            entity.tryTransmitSignal((ServerWorld) world);
         }
     }
 
-    public void updateConnections() {
-        needsConnectionUpdate = true;
+    /**
+     * Mark connections dirty — will be recomputed on next tick or periodic update.
+     */
+    public void markConnectionsDirty() {
+        this.needsConnectionUpdate = true;
     }
 
-    private void updateConnections(World world) {
+    /**
+     * Examine neighbors and update connection types & output directions.
+     */
+    private void updateConnections(ServerWorld world) {
         outputDirections.clear();
+        Direction facing = getCachedState().get(EncoderBlock.FACING);
 
         for (Direction dir : Direction.values()) {
             BlockPos adjacentPos = pos.offset(dir);
-            BlockState adjacentState = world.getBlockState(adjacentPos);
 
-            if (WireDetector.isWire(world, adjacentPos)) {
+            // Check for wire above, decoders, or redstone from neighbour
+            if (dir == Direction.UP && WireDetector.isWire(world, adjacentPos)) {
                 connections.put(dir, ConnectionType.WIRE_OUTPUT);
                 outputDirections.add(dir);
             } else if (WireDetector.isDecoder(world, adjacentPos)) {
@@ -76,87 +95,63 @@ public class EncoderBlockEntity extends BlockEntity{
         }
     }
 
-    private void updateInputs(World world) {
+    /**
+     * Read redstone power levels from neighbor blocks for all relevant sides.
+     */
+    private void updateInputs(ServerWorld world) {
         for (Direction dir : Direction.values()) {
-            if (connections.get(dir) == ConnectionType.REDSTONE_INPUT ||
-                    (connections.get(dir) == ConnectionType.NONE && !outputDirections.contains(dir))) {
+            ConnectionType type = connections.getOrDefault(dir, ConnectionType.NONE);
+
+            // We consider it an input if it's explicitly a redstone input,
+            // or if it's NONE and not an output direction (i.e., free side).
+            if (type == ConnectionType.REDSTONE_INPUT || (type == ConnectionType.NONE && !outputDirections.contains(dir))) {
                 int power = world.getEmittedRedstonePower(pos.offset(dir), dir);
                 inputPowers.put(dir, power);
             }
         }
     }
 
-    private void tryTransmitSignal(World world) {
+    /**
+     * Determine activation and send signals to all outputs.
+     */
+    private void tryTransmitSignal(ServerWorld world) {
         if (outputDirections.isEmpty()) return;
 
-        // Ищем направление активации
-        Direction activationDir = findActivationDirection();
-        if (activationDir == null) return;
+        Direction facing = getCachedState().get(EncoderBlock.FACING);
+        Direction activationDir = facing.getOpposite();
 
-        // Собираем силы сигналов с доступных входных направлений
-        List<Direction> inputDirections = getInputDirections(activationDir);
-        if (inputDirections.size() < 3) return; // Нужно минимум 3 входа
+        // If activation side has no power, bail.
+        if (inputPowers.getOrDefault(activationDir, 0) <= 0) return;
 
-        int[] strengths = new int[3];
-        for (int i = 0; i < 3 && i < inputDirections.size(); i++) {
-            strengths[i] = inputPowers.get(inputDirections.get(i));
-        }
+        // Collect strengths in explicit order: [left, front, right] relative to facing.
+        int[] strengths = getThreeInputStrengths(facing);
 
-        // Проверяем валидность сигнала
-        int totalStrength = Arrays.stream(strengths).sum();
-        if (totalStrength == 0) return;
+        // If all three are zero -> nothing to send.
+        if (strengths[0] == 0 && strengths[1] == 0 && strengths[2] == 0) return;
 
-        // Определяем тип сигнала
-        SignalType signalType = determineSignalType(activationDir, strengths);
+        // Currently simplified: always ascending signal
+        SignalType signalType = SignalType.ASCENDING;
 
-        // Отправляем сигналы во все доступные выходы
+        // Send packet to each output direction
         for (Direction outputDir : outputDirections) {
             BlockPos outputPos = pos.offset(outputDir);
-            SignalPacket packet = new SignalPacket(strengths, signalType, outputPos, outputDir, (ServerWorld) world);
-            SignalManager.getInstance(world.getServer().getOverworld()).sendPacket(packet);
+            SignalPacket packet = new SignalPacket(strengths, signalType, outputPos, outputDir, world);
+            SignalManager.getInstance(world).sendPacket(packet);
         }
     }
 
-    private Direction findActivationDirection() {
-        for (Map.Entry<Direction, Integer> entry : inputPowers.entrySet()) {
-            Direction dir = entry.getKey();
-            int power = entry.getValue();
+    /**
+     * Returns [left, front, right] relative to the block facing.
+     */
+    private int[] getThreeInputStrengths(Direction facing) {
+        Direction front = facing;
+        Direction left = facing.rotateYCounterclockwise();
+        Direction right = facing.rotateYClockwise();
 
-            if (power > 0 && !outputDirections.contains(dir)) {
-                return dir;
-            }
-        }
-        return null;
-    }
-
-    private List<Direction> getInputDirections(Direction activationDir) {
-        List<Direction> inputs = new ArrayList<>();
-
-        for (Direction dir : Direction.values()) {
-            if (dir != activationDir && !outputDirections.contains(dir)) {
-                inputs.add(dir);
-            }
-        }
-
-        return inputs;
-    }
-
-    private SignalType determineSignalType(Direction activationDir, int[] strengths) {
-        // Расширенная логика определения типа сигнала
-        return switch (activationDir) {
-            case DOWN -> SignalType.ASCENDING;
-            case UP -> SignalType.DESCENDING;
-            default -> {
-                // Анализируем силы сигналов для определения типа
-                int maxStrength = Arrays.stream(strengths).max().orElse(0);
-                if (maxStrength > 10) {
-                    yield SignalType.ASCENDING;
-                } else if (maxStrength < 5) {
-                    yield SignalType.DESCENDING;
-                } else {
-                    yield SignalType.NORMAL;
-                }
-            }
+        return new int[] {
+                inputPowers.getOrDefault(left, 0),
+                inputPowers.getOrDefault(front, 0),
+                inputPowers.getOrDefault(right, 0)
         };
     }
 
@@ -164,17 +159,15 @@ public class EncoderBlockEntity extends BlockEntity{
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
 
-        // Сохраняем состояние подключений
         NbtCompound connectionsNbt = new NbtCompound();
-        for (Map.Entry<Direction, ConnectionType> entry : connections.entrySet()) {
-            connectionsNbt.putString(entry.getKey().getName(), entry.getValue().name());
+        for (Direction dir : Direction.values()) {
+            connectionsNbt.putString(dir.getName(), connections.getOrDefault(dir, ConnectionType.NONE).name());
         }
         nbt.put("connections", connectionsNbt);
 
-        // Сохраняем силы входных сигналов
         NbtCompound inputsNbt = new NbtCompound();
-        for (Map.Entry<Direction, Integer> entry : inputPowers.entrySet()) {
-            inputsNbt.putInt(entry.getKey().getName(), entry.getValue());
+        for (Direction dir : Direction.values()) {
+            inputsNbt.putInt(dir.getName(), inputPowers.getOrDefault(dir, 0));
         }
         nbt.put("inputs", inputsNbt);
     }
@@ -183,7 +176,6 @@ public class EncoderBlockEntity extends BlockEntity{
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
 
-        // Загружаем подключения
         if (nbt.contains("connections")) {
             NbtCompound connectionsNbt = nbt.getCompound("connections");
             for (Direction dir : Direction.values()) {
@@ -196,7 +188,6 @@ public class EncoderBlockEntity extends BlockEntity{
             }
         }
 
-        // Загружаем входные сигналы
         if (nbt.contains("inputs")) {
             NbtCompound inputsNbt = nbt.getCompound("inputs");
             for (Direction dir : Direction.values()) {
@@ -212,3 +203,4 @@ public class EncoderBlockEntity extends BlockEntity{
         DECODER_OUTPUT
     }
 }
+

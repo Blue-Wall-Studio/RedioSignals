@@ -4,6 +4,7 @@ import net.minecraft.block.BlockState;
 import org.BlueWallStudio.argest.wire.types.CopperBulbWireType;
 import org.BlueWallStudio.argest.wire.types.CopperWireType;
 import org.BlueWallStudio.argest.wire.types.GoldWireType;
+import org.BlueWallStudio.argest.wire.types.LapisWireType;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -15,6 +16,7 @@ public class WireRegistry {
         register(new CopperWireType());
         register(new GoldWireType());
         register(new CopperBulbWireType());
+        register(new LapisWireType());
     }
 
     public static void register(WireType wireType) {

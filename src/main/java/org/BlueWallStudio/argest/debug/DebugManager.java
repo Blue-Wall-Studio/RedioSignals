@@ -26,10 +26,10 @@ public class DebugManager {
         UUID playerId = player.getUuid();
         if (debugPlayers.contains(playerId)) {
             debugPlayers.remove(playerId);
-            player.sendMessage(Text.literal("§6[RedstoneNet] §cДебаг отключен"), false);
+            player.sendMessage(Text.literal("§6[Argest] §cДебаг отключен"), false);
         } else {
             debugPlayers.add(playerId);
-            player.sendMessage(Text.literal("§6[RedstoneNet] §aДебаг включен"), false);
+            player.sendMessage(Text.literal("§6[Argest] §aДебаг включен"), false);
         }
     }
 

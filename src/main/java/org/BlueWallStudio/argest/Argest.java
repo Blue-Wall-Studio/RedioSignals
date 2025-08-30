@@ -3,11 +3,11 @@ package org.BlueWallStudio.argest;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import org.BlueWallStudio.argest.signal.SignalManager;
 import org.BlueWallStudio.argest.wire.WireRegistry;
 import org.BlueWallStudio.argest.debug.DebugCommand;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
 import org.BlueWallStudio.argest.network.NetworkHandler;
-import org.BlueWallStudio.argest.signal.SignalManager;
 import org.BlueWallStudio.argest.config.ModConfig;
 
 public class Argest implements ModInitializer {
@@ -25,6 +25,8 @@ public class Argest implements ModInitializer {
 
         // Регистрируем типы проводов
         WireRegistry.init();
+
+        WorldEventHandler.registerEvents();
 
         // Настраиваем сетевые пакеты
         NetworkHandler.init();

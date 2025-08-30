@@ -5,32 +5,34 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.BlueWallStudio.argest.blocks.entity.EncoderBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
+// EncoderBlock.java
 public class EncoderBlock extends BlockWithEntity {
-    public static final BooleanProperty POWERED = Properties.POWERED;
+    public static final EnumProperty<Direction> FACING = Properties.HORIZONTAL_FACING;
 
     public EncoderBlock(Settings settings) {
         super(settings);
-        // дефолтное состояние — после конструктора родителя
-        this.setDefaultState(this.stateManager.getDefaultState().with(POWERED, false));
+        this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(POWERED);
+        builder.add(FACING);
     }
 
-    // Реализация обязательного абстрактного метода — лениво вызывает createCodec
     @Override
     protected MapCodec<? extends BlockWithEntity> getCodec() {
         return createCodec(EncoderBlock::new);
@@ -39,6 +41,12 @@ public class EncoderBlock extends BlockWithEntity {
     @Override
     public BlockRenderType getRenderType(BlockState state) {
         return BlockRenderType.MODEL;
+    }
+
+    @Override
+    public BlockState getPlacementState(ItemPlacementContext ctx) {
+        // Player-facing side: the block faces opposite the player's look direction
+        return this.getDefaultState().with(FACING, ctx.getHorizontalPlayerFacing().getOpposite());
     }
 
     @Nullable
@@ -51,7 +59,8 @@ public class EncoderBlock extends BlockWithEntity {
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state,
                                                                   BlockEntityType<T> type) {
-        return world.isClient ? null : validateTicker(type, ModBlocks.ENCODER_BLOCK_ENTITY,
+        // server-only ticker; returns null on client
+        return world.isClient ? null : BlockWithEntity.validateTicker(type, ModBlocks.ENCODER_BLOCK_ENTITY,
                 EncoderBlockEntity::tick);
     }
 
@@ -61,19 +70,22 @@ public class EncoderBlock extends BlockWithEntity {
         if (!world.isClient) {
             BlockEntity be = world.getBlockEntity(pos);
             if (be instanceof EncoderBlockEntity encoder) {
-                encoder.updateConnections();
+                // mark for connection update next tick
+                encoder.markConnectionsDirty();
             }
         }
         super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
     }
 
     @Override
-    public boolean emitsRedstonePower(BlockState state) {
-        return false;
+    public boolean isTransparent(BlockState state) {
+        return true;
     }
 
     @Override
-    public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-        return 0;
+    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        // slightly smaller than full cube
+        return VoxelShapes.cuboid(0.1, 0.1, 0.1, 0.9, 0.9, 0.9);
     }
 }
+

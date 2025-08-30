@@ -1,7 +1,6 @@
 package org.BlueWallStudio.argest.debug;
 
 import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -11,7 +10,6 @@ import java.util.*;
 import org.BlueWallStudio.argest.signal.SignalPacket;
 
 public class PacketVisualizer {
-
     public void showPacketCreation(SignalPacket packet, Set<UUID> debugPlayers) {
         ServerWorld world = getWorldFromPacket(packet);
         if (world == null) return;
