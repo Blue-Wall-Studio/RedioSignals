@@ -1,4 +1,4 @@
 {
-  "block.argest.encoder": "Энкодер",
-  "block.argest.decocder": "Декодер"
+  "block.argest.encoder": "Шифратор",
+  "block.argest.decocder": "Дешифратор",
 }
