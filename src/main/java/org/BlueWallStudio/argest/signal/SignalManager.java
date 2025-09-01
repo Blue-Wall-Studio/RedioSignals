@@ -23,6 +23,7 @@ public class SignalManager extends PersistentState {
     private final Set<SignalPacket> activePackets = ConcurrentHashMap.newKeySet();
     private final ServerWorld world;
     private boolean dirty = false;
+    private static ModConfig config = ModConfig.getInstance();
 
     private SignalManager(ServerWorld world) {
         this.world = world;
@@ -37,9 +38,8 @@ public class SignalManager extends PersistentState {
                             () -> new SignalManager(w), // supplier для создания нового
                             (nbt, registries) -> fromNbt(nbt, registries, w), // функция загрузки
                             null // datafix type (не нужен)
-                    ),
-                    key
-            );
+            ),
+                    key);
         });
     }
 
@@ -49,8 +49,7 @@ public class SignalManager extends PersistentState {
         }
 
         // Ограничиваем количество активных пакетов
-        ModConfig config = ModConfig.getInstance();
-        if (activePackets.size() >= config.maxPacketsPerTick) {
+        if (config.maxPacketsPerTick != -1 && activePackets.size() >= config.maxPacketsPerTick) {
             return false;
         }
 
@@ -63,7 +62,6 @@ public class SignalManager extends PersistentState {
     }
 
     public void tick() {
-        ModConfig config = ModConfig.getInstance();
         int currentServerTick = getCurrentServerTick();
 
         // Обрабатываем пакеты только каждые N тиков для производительности
@@ -72,7 +70,9 @@ public class SignalManager extends PersistentState {
         }
 
         boolean hadChanges = processActivePackets();
-        hadChanges |= cleanupOldPackets(currentServerTick);
+        if (config.maxPacketLifetimeTicks != -1) {
+            hadChanges |= cleanupOldPackets(currentServerTick);
+        }
 
         if (hadChanges) {
             markDirty();
@@ -113,13 +113,11 @@ public class SignalManager extends PersistentState {
     }
 
     private boolean cleanupOldPackets(int currentServerTick) {
-        ModConfig config = ModConfig.getInstance();
         int maxLifetimeTicks = config.maxPacketLifetimeTicks;
 
         int sizeBefore = activePackets.size();
-        activePackets.removeIf(packet ->
-                packet.getAge(currentServerTick) > maxLifetimeTicks
-        );
+
+        activePackets.removeIf(packet -> packet.getAge(currentServerTick) > maxLifetimeTicks);
 
         return activePackets.size() != sizeBefore;
     }
@@ -251,8 +249,7 @@ public class SignalManager extends PersistentState {
                     BlockPos pos = new BlockPos(
                             posNbt.getInt("x"),
                             posNbt.getInt("y"),
-                            posNbt.getInt("z")
-                    );
+                            posNbt.getInt("z"));
 
                     // Загружаем направление
                     Direction direction = Direction.valueOf(packetNbt.getString("direction"));

@@ -8,11 +8,15 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import java.util.*;
 import org.BlueWallStudio.argest.signal.SignalPacket;
+import org.BlueWallStudio.argest.config.ModConfig;
 
 public class PacketVisualizer {
+    private static ModConfig config = ModConfig.getInstance();
+
     public void showPacketCreation(SignalPacket packet, Set<UUID> debugPlayers) {
         ServerWorld world = getWorldFromPacket(packet);
-        if (world == null) return;
+        if (world == null)
+            return;
 
         BlockPos pos = packet.getCurrentPos();
 
@@ -21,26 +25,27 @@ public class PacketVisualizer {
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerId);
             if (player != null && player.getWorld() == world) {
                 // Частицы для визуализации создания пакета - исправленный вызов
-                world.spawnParticles(
-                        new DustParticleEffect(0x00FF00, 1.0f),
-                        pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                        10, 0.3, 0.3, 0.3, 0.1
-                );
+                if (config.showParticles) {
+                    world.spawnParticles(
+                            new DustParticleEffect(0x00FF00, 1.0f),
+                            pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                            10, 0.3, 0.3, 0.3, 0.1);
+                }
 
                 // Информация в чат
                 player.sendMessage(Text.literal(String.format(
                         "§a[Packet Created] Pos: %s, Strength: %s, Type: %s",
                         pos.toShortString(),
                         Arrays.toString(packet.getSignalStrengths()),
-                        packet.getSignalType()
-                )), true);
+                        packet.getSignalType())), true);
             }
         }
     }
 
     public void showPacketMovement(SignalPacket oldPacket, SignalPacket newPacket, Set<UUID> debugPlayers) {
         ServerWorld world = getWorldFromPacket(newPacket);
-        if (world == null) return;
+        if (world == null)
+            return;
 
         BlockPos oldPos = oldPacket.getCurrentPos();
         BlockPos newPos = newPacket.getCurrentPos();
@@ -49,11 +54,12 @@ public class PacketVisualizer {
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerId);
             if (player != null && player.getWorld() == world) {
                 // Частицы движения - синие (исправленный вызов)
-                world.spawnParticles(
-                        new DustParticleEffect(0x0066FF, 1.0f),
-                        newPos.getX() + 0.5, newPos.getY() + 0.5, newPos.getZ() + 0.5,
-                        5, 0.2, 0.2, 0.2, 0.05
-                );
+                if (config.showParticles) {
+                    world.spawnParticles(
+                            new DustParticleEffect(0x0066FF, 1.0f),
+                            newPos.getX() + 0.5, newPos.getY() + 0.5, newPos.getZ() + 0.5,
+                            5, 0.2, 0.2, 0.2, 0.05);
+                }
 
                 // Создаем текстовый дисплей для направления
                 createDirectionDisplay(world, newPos, newPacket.getCurrentDirection());
@@ -63,7 +69,8 @@ public class PacketVisualizer {
 
     public void showPacketDeath(SignalPacket packet, String reason, Set<UUID> debugPlayers) {
         ServerWorld world = getWorldFromPacket(packet);
-        if (world == null) return;
+        if (world == null)
+            return;
 
         BlockPos pos = packet.getCurrentPos();
 
@@ -71,17 +78,17 @@ public class PacketVisualizer {
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerId);
             if (player != null && player.getWorld() == world) {
                 // Красные частицы смерти (исправленный вызов)
-                world.spawnParticles(
-                        new DustParticleEffect(0xFF0000, 1.0f),
-                        pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                        15, 0.4, 0.4, 0.4, 0.2
-                );
+                if (config.showParticles) {
+                    world.spawnParticles(
+                            new DustParticleEffect(0xFF0000, 1.0f),
+                            pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                            15, 0.4, 0.4, 0.4, 0.2);
+                }
 
                 // Сообщение в чат
                 player.sendMessage(Text.literal(String.format(
                         "§c[Packet Died] Pos: %s, Reason: %s",
-                        pos.toShortString(), reason
-                )), true);
+                        pos.toShortString(), reason)), true);
             }
         }
     }

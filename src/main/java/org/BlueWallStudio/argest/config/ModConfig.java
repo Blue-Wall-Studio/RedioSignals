@@ -21,28 +21,15 @@ public class ModConfig {
 
     private static final String CONFIG_FILENAME = "argest.json";
     private static final File CONFIG_FILE = new File(
-            FabricLoader.getInstance().getConfigDir().toFile(), CONFIG_FILENAME
-    );
+            FabricLoader.getInstance().getConfigDir().toFile(), CONFIG_FILENAME);
 
     // Настройки отладки
-    public boolean debugEnabled = false;
     public boolean showParticles = true;
-    public boolean showChatMessages = true;
 
     // Настройки производительности (в тиках)
     public int maxPacketLifetimeTicks = 100; // 5 секунд при 20 TPS
     public int signalProcessingDelay = 1; // Каждый тик
     public int maxPacketsPerTick = 100;
-    public int maxPacketsPerWorld = 1000;
-
-    // Настройки сигналов
-    public int maxSignalStrength = 15;
-    public double signalDecayRate = 0.1; // Потери силы сигнала на расстоянии
-
-    // Настройки оптимизации
-    public boolean enableBatchProcessing = true;
-    public int batchSize = 50;
-    public boolean enablePacketPooling = true;
 
     private ModConfig() {
         // Приватный конструктор для Singleton
@@ -97,13 +84,9 @@ public class ModConfig {
 
     private void validate() {
         // Валидация и коррекция значений конфигурации
-        maxPacketLifetimeTicks = Math.max(1, maxPacketLifetimeTicks);
+        maxPacketLifetimeTicks = Math.max(-1, maxPacketLifetimeTicks);
         signalProcessingDelay = Math.max(1, signalProcessingDelay);
-        maxPacketsPerTick = Math.max(1, Math.min(1000, maxPacketsPerTick));
-        maxPacketsPerWorld = Math.max(maxPacketsPerTick, maxPacketsPerWorld);
-        maxSignalStrength = Math.max(1, Math.min(255, maxSignalStrength));
-        signalDecayRate = Math.max(0.0, Math.min(1.0, signalDecayRate));
-        batchSize = Math.max(1, Math.min(maxPacketsPerTick, batchSize));
+        maxPacketsPerTick = Math.max(-1, Math.min(1000, maxPacketsPerTick));
     }
 
     public void reload() {
