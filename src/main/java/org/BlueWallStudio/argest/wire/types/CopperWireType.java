@@ -39,21 +39,21 @@ public class CopperWireType extends AbstractWireType {
 
         if (signalType == SignalType.ASCENDING) {
             // Вверх в приоритете
-            if (hasWireAt(world, pos.up())) {
+            if (hasValidTargetAt(world, pos.up())) {
                 exits.add(Direction.UP);
             } else {
-                addHorizontalDirections(world, pos, exits, entryDirection, dir -> true, false);
+                addHorizontalDirections(world, pos, exits, entryDirection, dir -> true, true);
             }
         } else if (signalType == SignalType.DESCENDING) {
             // Вниз в приоритете
-            if (hasWireAt(world, pos.down())) {
+            if (hasValidTargetAt(world, pos.down())) {
                 exits.add(Direction.DOWN);
             } else {
-                addHorizontalDirections(world, pos, exits, entryDirection, dir -> true, false);
+                addHorizontalDirections(world, pos, exits, entryDirection, dir -> true, true);
             }
         } else {
             // Обычный сигнал — все направления (включая вертикальные)
-            addAllDirections(world, pos, exits, entryDirection, dir -> true, false);
+            addAllDirections(world, pos, exits, entryDirection, dir -> true, true);
         }
 
         return exits;

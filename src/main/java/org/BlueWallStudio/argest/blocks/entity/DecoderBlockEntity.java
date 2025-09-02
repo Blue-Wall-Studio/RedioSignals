@@ -4,25 +4,26 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.BlueWallStudio.argest.blocks.DecoderBlock;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
 import org.BlueWallStudio.argest.signal.SignalPacket;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.EnumMap;
 
 public class DecoderBlockEntity extends BlockEntity {
-    private Map<Direction, Integer> outputPowers = new HashMap<>();
+    private final EnumMap<Direction, Integer> outputPowers = new EnumMap<>(Direction.class);
+
+    private static final int SIGNAL_DURATION = 20; // тиков (1 секунда)
     private int ticksUntilReset = 0;
-    private static final int SIGNAL_DURATION = 20; // 1 секунда
 
     public DecoderBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlocks.DECODER_BLOCK_ENTITY, pos, state);
-
-        for (Direction dir : Direction.values()) {
-            outputPowers.put(dir, 0);
+        for (Direction d : Direction.values()) {
+            outputPowers.put(d, 0);
         }
     }
 
@@ -31,41 +32,58 @@ public class DecoderBlockEntity extends BlockEntity {
 
         if (entity.ticksUntilReset > 0) {
             entity.ticksUntilReset--;
-            if (entity.ticksUntilReset <= 0) {
-                entity.resetOutputs();
-                world.updateNeighbors(pos, state.getBlock());
+            if (entity.ticksUntilReset <= 0 && world instanceof ServerWorld serverWorld) {
+                entity.resetOutputs(serverWorld);
             }
         }
     }
 
+    /**
+     * Принимаем пакет от энкодера.
+     * Сигналы распределяются относительно направления блока (свойство FACING):
+     * [лево, фронт, право].
+     */
     public void receivePacket(SignalPacket packet, Direction entryDirection) {
-        // Восстанавливаем исходные стороны сигналов
+        if (world == null || world.isClient) return;
+
         int[] strengths = packet.getSignalStrengths();
+        if (strengths == null || strengths.length < 3) return;
 
-        // Распределяем по сторонам (исключая вход)
-        Direction[] sides = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.UP, Direction.DOWN};
-        int index = 0;
+        Direction facing = getCachedState().get(DecoderBlock.FACING);
+        Direction left = facing.rotateYCounterclockwise();
+        Direction right = facing.rotateYClockwise();
 
-        for (Direction dir : sides) {
-            if (dir != entryDirection && index < strengths.length) {
-                outputPowers.put(dir, strengths[index]);
-                index++;
-            }
+        // Сбрасываем всё
+        for (Direction d : Direction.values()) {
+            outputPowers.put(d, 0);
         }
 
+        // Заполняем только горизонтальные стороны
+        outputPowers.put(left, strengths[0]);
+        outputPowers.put(facing, strengths[1]);
+        outputPowers.put(right, strengths[2]);
+
         ticksUntilReset = SIGNAL_DURATION;
-        if (world != null) {
+
+        if (world instanceof ServerWorld serverWorld) {
+            serverWorld.updateNeighbors(pos, getCachedState().getBlock());
+        }
+    }
+
+    private void resetOutputs(ServerWorld world) {
+        boolean hadAny = outputPowers.values().stream().anyMatch(v -> v != null && v > 0);
+        for (Direction d : Direction.values()) {
+            outputPowers.put(d, 0);
+        }
+        ticksUntilReset = 0;
+
+        if (hadAny) {
             world.updateNeighbors(pos, getCachedState().getBlock());
         }
     }
 
-    private void resetOutputs() {
-        for (Direction dir : Direction.values()) {
-            outputPowers.put(dir, 0);
-        }
-    }
-
     public int getOutputPower(Direction direction) {
+        if (!direction.getAxis().isHorizontal()) return 0;
         return outputPowers.getOrDefault(direction, 0);
     }
 
@@ -73,17 +91,24 @@ public class DecoderBlockEntity extends BlockEntity {
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
         nbt.putInt("ticksUntilReset", ticksUntilReset);
-        for (Direction dir : Direction.values()) {
-            nbt.putInt("power_" + dir.getName(), outputPowers.getOrDefault(dir, 0));
+        NbtCompound outputs = new NbtCompound();
+        for (Direction d : Direction.values()) {
+            outputs.putInt(d.getName(), outputPowers.getOrDefault(d, 0));
         }
+        nbt.put("outputPowers", outputs);
     }
 
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
         ticksUntilReset = nbt.getInt("ticksUntilReset");
-        for (Direction dir : Direction.values()) {
-            outputPowers.put(dir, nbt.getInt("power_" + dir.getName()));
+        if (nbt.contains("outputPowers")) {
+            NbtCompound outputs = nbt.getCompound("outputPowers");
+            for (Direction d : Direction.values()) {
+                outputPowers.put(d, outputs.getInt(d.getName()));
+            }
+        } else {
+            for (Direction d : Direction.values()) outputPowers.put(d, 0);
         }
     }
 }

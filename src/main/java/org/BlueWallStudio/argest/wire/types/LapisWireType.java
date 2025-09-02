@@ -64,7 +64,7 @@ public class LapisWireType extends AbstractWireType {
             // Проверяем физические ограничения для типов пакетов
             if (!canPacketGoInDirection(signalType, dir)) continue;
 
-            if (hasWireOrDecoderAt(world, pos.offset(dir))) {
+            if (hasValidTargetAt(world, pos.offset(dir))) {
                 exits.add(dir); // У лазурита может быть несколько выходов
             }
         }

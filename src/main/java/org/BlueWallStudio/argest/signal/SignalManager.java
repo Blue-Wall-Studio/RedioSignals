@@ -1,5 +1,7 @@
 package org.BlueWallStudio.argest.signal;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtInt;
@@ -15,8 +17,11 @@ import org.BlueWallStudio.argest.wire.WireDetector;
 import org.BlueWallStudio.argest.wire.WireRegistry;
 import org.BlueWallStudio.argest.wire.WireType;
 import org.BlueWallStudio.argest.config.ModConfig;
+import org.BlueWallStudio.argest.wireless.WirelessTransmissionConfig;
 import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiver;
 import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiverRegistry;
+import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitter;
+import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitterRegistry;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -103,8 +108,8 @@ public class SignalManager extends PersistentState {
                 hadChanges = true;
             }
 
-            if (!result.getNewPackets().isEmpty()) {
-                newPackets.addAll(result.getNewPackets());
+            if (!result.newPackets().isEmpty()) {
+                newPackets.addAll(result.newPackets());
                 hadChanges = true;
             }
         }
@@ -125,6 +130,7 @@ public class SignalManager extends PersistentState {
         return activePackets.size() != sizeBefore;
     }
 
+    // Обновленная часть SignalManager с обработкой беспроводных передатчиков
     private PacketProcessingResult processPacket(SignalPacket packet) {
         BlockPos currentPos = packet.getCurrentPos();
         Direction currentDir = packet.getCurrentDirection();
@@ -147,6 +153,19 @@ public class SignalManager extends PersistentState {
             } else {
                 // Пакет был уничтожен приемником
                 DebugManager.getInstance().onPacketDied(packet, "Processed by wireless receiver");
+                return PacketProcessingResult.remove();
+            }
+        }
+
+        // Проверяем, является ли текущая позиция беспроводным передатчиком
+        if (WireDetector.isWirelessTransmitter(world, currentPos)) {
+            Set<SignalPacket> transmittedPackets = handleWirelessTransmission(currentPos, packet, currentDir);
+            if (!transmittedPackets.isEmpty()) {
+                DebugManager.getInstance().onPacketDied(packet, "Transmitted wirelessly");
+                return PacketProcessingResult.removeAndAdd(transmittedPackets);
+            } else {
+                // Передатчик не смог передать пакет
+                DebugManager.getInstance().onPacketDied(packet, "Wireless transmission failed");
                 return PacketProcessingResult.remove();
             }
         }
@@ -186,6 +205,82 @@ public class SignalManager extends PersistentState {
         }
 
         return PacketProcessingResult.removeAndAdd(newPackets);
+    }
+
+    /**
+     * Обработка беспроводной передачи
+     */
+    private Set<SignalPacket> handleWirelessTransmission(BlockPos pos, SignalPacket packet, Direction entryDirection) {
+        Optional<WirelessTransmitter> transmitter = WirelessTransmitterRegistry.getTransmitter(world.getBlockState(pos));
+        if (transmitter.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        WirelessTransmitter trans = transmitter.get();
+        if (!trans.canTransmit(world, pos, packet)) {
+            return Collections.emptySet();
+        }
+
+        WirelessTransmissionConfig config = trans.getTransmissionConfig(world, pos, packet, entryDirection);
+        if (config == null) {
+            return Collections.emptySet();
+        }
+
+        // Ищем целевую позицию для беспроводной передачи
+        BlockPos targetPos = findWirelessTarget(pos, config, packet);
+        if (targetPos == null) {
+            return Collections.emptySet();
+        }
+
+        // Создаем новый пакет в целевой позиции
+        SignalPacket newPacket = packet.withNewPosition(targetPos, config.transmissionDirection());
+        Set<SignalPacket> result = new HashSet<>();
+        result.add(newPacket);
+
+        DebugManager.getInstance().onPacketMoved(packet, newPacket);
+        return result;
+    }
+
+    /**
+     * Ищет целевую позицию для беспроводной передачи
+     */
+    private BlockPos findWirelessTarget(BlockPos startPos, WirelessTransmissionConfig config, SignalPacket packet) {
+        Direction dir = config.transmissionDirection();
+        int maxRange = config.maxRange();
+        boolean canPenetrate = config.canPenetrate();
+        Set<Block> blockingBlocks = config.blockingBlocks();
+
+        for (int i = 1; i <= maxRange; i++) {
+            BlockPos checkPos = startPos.offset(dir, i);
+            BlockState checkState = world.getBlockState(checkPos);
+            Block checkBlock = checkState.getBlock();
+
+            // Блокирующие блоки
+            if (blockingBlocks.contains(checkBlock)) {
+                break;
+            }
+
+            if (!canPenetrate && !checkState.isAir() &&
+                    !WireDetector.isWirelessReceiver(world, checkPos)) {
+                break;
+            }
+
+            // Если нужен именно приёмник
+            if (config.requireReceiver()) {
+                if (WireDetector.isWirelessReceiver(world, checkPos)) {
+                    return checkPos; // нашли — ок
+                } else {
+                    continue; // игнорируем всё остальное
+                }
+            }
+
+            // Обычная логика (если requireReceiver == false)
+            if (WireDetector.isWirelessReceiver(world, checkPos) || WireDetector.isWire(world, checkPos)) {
+                return checkPos;
+            }
+        }
+
+        return null; // ничего не нашли — пакет умирает
     }
 
     private void handleDecoderReception(BlockPos pos, SignalPacket packet, Direction entryDirection) {
@@ -314,33 +409,22 @@ public class SignalManager extends PersistentState {
     }
 
     // Вспомогательный класс для результатов обработки пакетов
-    private static class PacketProcessingResult {
-        private final boolean shouldRemove;
-        private final Set<SignalPacket> newPackets;
+        private record PacketProcessingResult(boolean shouldRemove, Set<SignalPacket> newPackets) {
+            private PacketProcessingResult(boolean shouldRemove, Set<SignalPacket> newPackets) {
+                this.shouldRemove = shouldRemove;
+                this.newPackets = newPackets != null ? newPackets : Collections.emptySet();
+            }
 
-        private PacketProcessingResult(boolean shouldRemove, Set<SignalPacket> newPackets) {
-            this.shouldRemove = shouldRemove;
-            this.newPackets = newPackets != null ? newPackets : Collections.emptySet();
-        }
+            public static PacketProcessingResult remove() {
+                return new PacketProcessingResult(true, Collections.emptySet());
+            }
 
-        public static PacketProcessingResult remove() {
-            return new PacketProcessingResult(true, Collections.emptySet());
-        }
+            public static PacketProcessingResult removeAndAdd(Set<SignalPacket> newPackets) {
+                return new PacketProcessingResult(true, newPackets);
+            }
 
-        public static PacketProcessingResult removeAndAdd(Set<SignalPacket> newPackets) {
-            return new PacketProcessingResult(true, newPackets);
+            public static PacketProcessingResult keep() {
+                return new PacketProcessingResult(false, Collections.emptySet());
+            }
         }
-
-        public static PacketProcessingResult keep() {
-            return new PacketProcessingResult(false, Collections.emptySet());
-        }
-
-        public boolean shouldRemove() {
-            return shouldRemove;
-        }
-
-        public Set<SignalPacket> getNewPackets() {
-            return newPackets;
-        }
-    }
 }

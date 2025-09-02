@@ -11,9 +11,6 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.BlueWallStudio.argest.blocks.entity.EncoderBlockEntity;
@@ -81,11 +78,4 @@ public class EncoderBlock extends BlockWithEntity {
     public boolean isTransparent(BlockState state) {
         return true;
     }
-
-    @Override
-    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        // slightly smaller than full cube
-        return VoxelShapes.cuboid(0.1, 0.1, 0.1, 1.0, 1.0, 1.0);
-    }
 }
-

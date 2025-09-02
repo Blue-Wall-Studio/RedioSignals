@@ -40,7 +40,7 @@ public class GoldWireType extends AbstractWireType {
         // 1) Попробовать прямо (вперёд)
         if (entryDirection != null) {
             Direction forward = entryDirection;
-            if (canPacketGoInDirection(signalType, forward) && hasWireOrDecoderAt(world, pos.offset(forward))) {
+            if (canPacketGoInDirection(signalType, forward) && hasValidTargetAt(world, pos.offset(forward))) {
                 exits.add(forward);
                 return exits;
             }
@@ -55,7 +55,7 @@ public class GoldWireType extends AbstractWireType {
             if (entryDirection != null && dir == entryDirection.getOpposite()) continue;
             if (!canPacketGoInDirection(signalType, dir)) continue;
 
-            if (hasWireOrDecoderAt(world, pos.offset(dir))) {
+            if (hasValidTargetAt(world, pos.offset(dir))) {
                 exits.add(dir);
                 break; // берём только первое доступное
             }

@@ -4,7 +4,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import org.BlueWallStudio.argest.wire.WireDetector;
-import org.BlueWallStudio.argest.wire.WireRegistry;
 import org.BlueWallStudio.argest.wire.WireType;
 
 import java.util.List;
@@ -30,15 +29,24 @@ public abstract class AbstractWireType implements WireType {
      * Есть ли провод (любой тип) в указанной позиции.
      */
     protected boolean hasWireAt(World world, BlockPos pos) {
-        return WireRegistry.getWireType(world.getBlockState(pos)).isPresent();
+        return WireDetector.isWire(world, pos);
     }
 
     /**
      * Есть ли провод ИЛИ декодер в указанной позиции.
      */
     protected boolean hasWireOrDecoderAt(World world, BlockPos pos) {
-        return WireRegistry.getWireType(world.getBlockState(pos)).isPresent()
-                || WireDetector.isDecoder(world, pos);
+        return WireDetector.isWire(world, pos) || WireDetector.isDecoder(world, pos);
+    }
+
+    /**
+     * Есть ли что-то, что может принять пакет (провод, декодер, беспроводные компоненты).
+     */
+    protected boolean hasValidTargetAt(World world, BlockPos pos) {
+        return WireDetector.isWire(world, pos)
+                || WireDetector.isDecoder(world, pos)
+                || WireDetector.isWirelessReceiver(world, pos)
+                || WireDetector.isWirelessTransmitter(world, pos);
     }
 
     /**
@@ -69,7 +77,7 @@ public abstract class AbstractWireType implements WireType {
             if (extraAllowed != null && !extraAllowed.test(dir)) continue;
 
             BlockPos target = pos.offset(dir);
-            boolean ok = requireWireOrDecoder ? hasWireOrDecoderAt(world, target) : hasWireAt(world, target);
+            boolean ok = requireWireOrDecoder ? hasValidTargetAt(world, target) : hasWireAt(world, target);
             if (ok) {
                 exits.add(dir);
                 break; // берем первое доступное
@@ -93,7 +101,7 @@ public abstract class AbstractWireType implements WireType {
             if (extraAllowed != null && !extraAllowed.test(dir)) continue;
 
             BlockPos target = pos.offset(dir);
-            boolean ok = requireWireOrDecoder ? hasWireOrDecoderAt(world, target) : hasWireAt(world, target);
+            boolean ok = requireWireOrDecoder ? hasValidTargetAt(world, target) : hasWireAt(world, target);
             if (ok) {
                 exits.add(dir);
             }
