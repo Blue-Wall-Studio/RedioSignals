@@ -1,10 +1,11 @@
 package org.BlueWallStudio.argest.wire;
 
 import net.minecraft.block.BlockState;
-import org.BlueWallStudio.argest.wire.types.CopperBulbWireType;
-import org.BlueWallStudio.argest.wire.types.CopperWireType;
-import org.BlueWallStudio.argest.wire.types.GoldWireType;
-import org.BlueWallStudio.argest.wire.types.LapisWireType;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
+import org.BlueWallStudio.argest.signal.SignalPacket;
+import org.BlueWallStudio.argest.wire.types.*;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -17,6 +18,7 @@ public class WireRegistry {
         register(new GoldWireType());
         register(new CopperBulbWireType());
         register(new LapisWireType());
+        register(new ChainWireType());
     }
 
     public static void register(WireType wireType) {

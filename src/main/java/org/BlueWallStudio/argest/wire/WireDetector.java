@@ -4,9 +4,11 @@ import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.BlueWallStudio.argest.blocks.DecoderBlock;
+import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiverRegistry;
 
 import java.util.Optional;
 
+// Обновленный WireDetector для поддержки беспроводных приемников
 public class WireDetector {
     /**
      * Определяет, является ли блок проводом
@@ -21,6 +23,13 @@ public class WireDetector {
      */
     public static boolean isDecoder(World world, BlockPos pos) {
         return world.getBlockState(pos).getBlock() instanceof DecoderBlock;
+    }
+
+    /**
+     * Определяет, является ли блок беспроводным приемником
+     */
+    public static boolean isWirelessReceiver(World world, BlockPos pos) {
+        return WirelessReceiverRegistry.isWirelessReceiver(world, pos);
     }
 
     /**
@@ -41,6 +50,9 @@ public class WireDetector {
 
         // Если целевая позиция - декодер, разрешаем передачу
         if (isDecoder(world, to)) return true;
+
+        // Если целевая позиция - беспроводной приемник, разрешаем передачу
+        if (isWirelessReceiver(world, to)) return true;
 
         // Если целевая позиция - провод, проверяем совместимость
         if (toWire.isPresent()) {

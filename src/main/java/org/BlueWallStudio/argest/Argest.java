@@ -9,6 +9,8 @@ import org.BlueWallStudio.argest.debug.DebugCommand;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
 import org.BlueWallStudio.argest.network.NetworkHandler;
 import org.BlueWallStudio.argest.config.ModConfig;
+import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiverRegistry;
+import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitterRegistry;
 
 public class Argest implements ModInitializer {
     public static final String MOD_ID = "argest";
@@ -25,6 +27,10 @@ public class Argest implements ModInitializer {
 
         // Регистрируем типы проводов
         WireRegistry.init();
+
+        WirelessReceiverRegistry.initializeDefaults();
+
+        WirelessTransmitterRegistry.initializeDefaults();
 
         WorldEventHandler.registerEvents();
 

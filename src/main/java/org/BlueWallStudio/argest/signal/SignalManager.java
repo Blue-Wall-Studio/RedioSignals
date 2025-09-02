@@ -15,6 +15,9 @@ import org.BlueWallStudio.argest.wire.WireDetector;
 import org.BlueWallStudio.argest.wire.WireRegistry;
 import org.BlueWallStudio.argest.wire.WireType;
 import org.BlueWallStudio.argest.config.ModConfig;
+import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiver;
+import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiverRegistry;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -133,6 +136,21 @@ public class SignalManager extends PersistentState {
             return PacketProcessingResult.remove();
         }
 
+        // Проверяем, является ли текущая позиция беспроводным приемником
+        if (WireDetector.isWirelessReceiver(world, currentPos)) {
+            SignalPacket processedPacket = handleWirelessReception(currentPos, packet, currentDir);
+            if (processedPacket != null) {
+                // Пакет был обработан приемником, продолжаем с новым пакетом
+                Set<SignalPacket> newPackets = new HashSet<>();
+                newPackets.add(processedPacket);
+                return PacketProcessingResult.removeAndAdd(newPackets);
+            } else {
+                // Пакет был уничтожен приемником
+                DebugManager.getInstance().onPacketDied(packet, "Processed by wireless receiver");
+                return PacketProcessingResult.remove();
+            }
+        }
+
         // Проверяем, есть ли провод в текущей позиции
         Optional<WireType> wireType = WireRegistry.getWireType(world.getBlockState(currentPos));
         if (wireType.isEmpty()) {
@@ -174,6 +192,14 @@ public class SignalManager extends PersistentState {
         if (world.getBlockEntity(pos) instanceof DecoderBlockEntity decoder) {
             decoder.receivePacket(packet, entryDirection);
         }
+    }
+
+    private SignalPacket handleWirelessReception(BlockPos pos, SignalPacket packet, Direction entryDirection) {
+        Optional<WirelessReceiver> receiver = WirelessReceiverRegistry.getReceiver(world.getBlockState(pos));
+        if (receiver.isPresent()) {
+            return receiver.get().processWirelessReception(world, pos, packet, entryDirection);
+        }
+        return null;
     }
 
     public Set<SignalPacket> getActivePackets() {

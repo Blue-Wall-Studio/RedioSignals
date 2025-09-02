@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east,": {
+      "model": "argest:block/decoder",
+      "y": 90
+    },
+    "facing=north,": {
+      "model": "argest:block/decoder"
+    },
+    "facing=south,": {
+      "model": "argest:block/decoder",
+      "y": 180
+    },
+    "facing=west,": {
+      "model": "argest:block/decoder",
+      "y": 270
+    }
+  }
+}

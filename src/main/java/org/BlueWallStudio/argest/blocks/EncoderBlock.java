@@ -85,7 +85,7 @@ public class EncoderBlock extends BlockWithEntity {
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         // slightly smaller than full cube
-        return VoxelShapes.cuboid(0.1, 0.1, 0.1, 0.9, 0.9, 0.9);
+        return VoxelShapes.cuboid(0.1, 0.1, 0.1, 1.0, 1.0, 1.0);
     }
 }
 
