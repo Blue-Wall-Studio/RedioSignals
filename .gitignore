@@ -4,6 +4,7 @@
 build
 run
 bin
+out
 
 .classpath
 .factorypath
