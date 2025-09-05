@@ -10,10 +10,10 @@ import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitterRegistr
 
 import java.util.Optional;
 
-// Обновленный WireDetector с поддержкой беспроводных передатчиков
+// Updated WireDetector with wireless receivers support
 public class WireDetector {
     /**
-     * Определяет, является ли блок проводом
+     * Determine, if block is wire
      */
     public static boolean isWire(World world, BlockPos pos) {
         BlockState state = world.getBlockState(pos);
@@ -21,61 +21,66 @@ public class WireDetector {
     }
 
     /**
-     * Определяет, является ли блок декодером (терминальным элементом)
+     * Determine, if block is decoder (terminal element)
      */
     public static boolean isDecoder(World world, BlockPos pos) {
         return world.getBlockState(pos).getBlock() instanceof DecoderBlock;
     }
 
     /**
-     * Определяет, является ли блок беспроводным приемником
+     * Determine, if block is wireless receiver
      */
     public static boolean isWirelessReceiver(World world, BlockPos pos) {
         return WirelessReceiverRegistry.isWirelessReceiver(world, pos);
     }
 
     /**
-     * Определяет, является ли блок беспроводным передатчиком
+     * Determine, if block is wireless transmitter
      */
     public static boolean isWirelessTransmitter(World world, BlockPos pos) {
         return WirelessTransmitterRegistry.isWirelessTransmitter(world, pos);
     }
 
     /**
-     * Получает тип провода в указанной позиции
+     * Get wire type in specified direction
      */
     public static Optional<WireType> getWireType(World world, BlockPos pos) {
         return WireRegistry.getWireType(world.getBlockState(pos));
     }
 
     /**
-     * Проверяет, может ли пакет пройти между двумя позициями
+     * Checks if packet can go between two directions
      */
     public static boolean canTransmit(World world, BlockPos from, BlockPos to, Direction direction) {
-        // Проверяем, есть ли провод в исходной позиции
+        // Check if wire is present at starting position
         Optional<WireType> fromWire = getWireType(world, from);
-        if (fromWire.isEmpty()) return false;
+        if (fromWire.isEmpty())
+            return false;
 
-        // Проверяем, может ли провод передавать в данном направлении
-        if (!fromWire.get().canExitTo(world, from, direction)) return false;
+        // Check if wire can transfer if specified direction
+        if (!fromWire.get().canExitTo(world, from, direction))
+            return false;
 
-        // Проверяем целевую позицию
-        // 1. Если это декодер - разрешаем
-        if (isDecoder(world, to)) return true;
+        // Check target position
+        // 1. If decoder - allow;
+        if (isDecoder(world, to))
+            return true;
 
-        // 2. Если это беспроводной приемник - разрешаем
-        if (isWirelessReceiver(world, to)) return true;
+        // 2. If wireless receiver - allow;
+        if (isWirelessReceiver(world, to))
+            return true;
 
-        // 3. Если это беспроводной передатчик - разрешаем
-        if (isWirelessTransmitter(world, to)) return true;
+        // 3. If wireless transmitter - allow;
+        if (isWirelessTransmitter(world, to))
+            return true;
 
-        // 4. Если это провод - проверяем совместимость
+        // 4. If wire - check compatibility
         Optional<WireType> toWire = getWireType(world, to);
         if (toWire.isPresent()) {
             return toWire.get().canEnterFrom(world, to, direction.getOpposite());
         }
 
-        // Во всех остальных случаях - запрещаем
+        // In all other cases - disallow
         return false;
     }
 }

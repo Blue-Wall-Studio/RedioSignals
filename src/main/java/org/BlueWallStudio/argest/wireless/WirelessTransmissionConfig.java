@@ -8,19 +8,20 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- * @param canPenetrate   может ли проходить через блоки
- * @param blockingBlocks какие блоки блокируют
- */ // Конфигурация беспроводной передачи
+ * @param canPenetrate   can go through blocks?
+ * @param blockingBlocks which blocks block transmission?
+ */
+
+// Wireless transmission configuration
 public record WirelessTransmissionConfig(
         Direction transmissionDirection,
         int maxRange,
         boolean canPenetrate,
         Set<Block> blockingBlocks,
-        boolean requireReceiver
-) {
+        boolean requireReceiver) {
     public WirelessTransmissionConfig(Direction transmissionDirection, int maxRange,
-                                      boolean canPenetrate, Set<Block> blockingBlocks,
-                                      boolean requireReceiver) {
+            boolean canPenetrate, Set<Block> blockingBlocks,
+            boolean requireReceiver) {
         this.transmissionDirection = transmissionDirection;
         this.maxRange = maxRange;
         this.canPenetrate = canPenetrate;
@@ -28,7 +29,7 @@ public record WirelessTransmissionConfig(
         this.requireReceiver = requireReceiver;
     }
 
-    // пример для цепи
+    // Chain example
     public static WirelessTransmissionConfig chain(Direction direction) {
         Set<Block> blocking = Set.of(Blocks.BEDROCK, Blocks.OBSIDIAN);
         return new WirelessTransmissionConfig(direction, 32, true, blocking, true); // requireReceiver = true

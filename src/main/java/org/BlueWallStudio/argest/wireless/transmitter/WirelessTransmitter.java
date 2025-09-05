@@ -6,10 +6,10 @@ import net.minecraft.world.World;
 import org.BlueWallStudio.argest.signal.SignalPacket;
 import org.BlueWallStudio.argest.wireless.WirelessTransmissionConfig;
 
-// Интерфейс для беспроводных передатчиков
+// Interface for wireless transmitters
 public interface WirelessTransmitter {
     /**
-     * Проверяет, может ли этот блок работать как беспроводной передатчик
+     * Check if block can work as wireless transmitter
      */
     boolean canTransmit(World world, BlockPos pos, SignalPacket packet);
 
@@ -21,13 +21,13 @@ public interface WirelessTransmitter {
     SignalPacket processWirelessTransmission(World world, BlockPos pos, SignalPacket packet, Direction entryDirection);
 
     /**
-     * Получает конфигурацию передачи для данного передатчика
+     * Receives transmission configuration for given transmitter
      */
     WirelessTransmissionConfig getTransmissionConfig(World world, BlockPos pos, SignalPacket packet,
             Direction entryDirection);
 
     /**
-     * Приоритет передатчика (больше = выше приоритет)
+     * Transmitter priority (more = higher priority)
      */
     default int getTransmitterPriority() {
         return 0;

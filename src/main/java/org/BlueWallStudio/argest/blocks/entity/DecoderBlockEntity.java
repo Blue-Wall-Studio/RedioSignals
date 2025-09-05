@@ -17,7 +17,7 @@ import java.util.EnumMap;
 public class DecoderBlockEntity extends BlockEntity {
     private final EnumMap<Direction, Integer> outputPowers = new EnumMap<>(Direction.class);
 
-    private static final int SIGNAL_DURATION = 20; // тиков (1 секунда)
+    private static final int SIGNAL_DURATION = 20; // 20 ticks = 1 second
     private int ticksUntilReset = 0;
 
     public DecoderBlockEntity(BlockPos pos, BlockState state) {
@@ -28,7 +28,8 @@ public class DecoderBlockEntity extends BlockEntity {
     }
 
     public static void tick(World world, BlockPos pos, BlockState state, DecoderBlockEntity entity) {
-        if (world.isClient) return;
+        if (world.isClient)
+            return;
 
         if (entity.ticksUntilReset > 0) {
             entity.ticksUntilReset--;
@@ -39,26 +40,29 @@ public class DecoderBlockEntity extends BlockEntity {
     }
 
     /**
-     * Принимаем пакет от энкодера.
-     * Сигналы распределяются относительно направления блока (свойство FACING):
-     * [лево, фронт, право].
+     * getting packet from encoder
+     * signal strengths are distributed relative to the block's direction (FACING
+     * property):
+     * [left, front, right]
      */
     public void receivePacket(SignalPacket packet, Direction entryDirection) {
-        if (world == null || world.isClient) return;
+        if (world == null || world.isClient)
+            return;
 
         int[] strengths = packet.getSignalStrengths();
-        if (strengths == null || strengths.length < 3) return;
+        if (strengths == null || strengths.length < 3)
+            return;
 
         Direction facing = getCachedState().get(DecoderBlock.FACING);
         Direction left = facing.rotateYCounterclockwise();
         Direction right = facing.rotateYClockwise();
 
-        // Сбрасываем всё
+        // Resets everything
         for (Direction d : Direction.values()) {
             outputPowers.put(d, 0);
         }
 
-        // Заполняем только горизонтальные стороны
+        // Fill only horizontal directions
         outputPowers.put(left, strengths[0]);
         outputPowers.put(facing, strengths[1]);
         outputPowers.put(right, strengths[2]);
@@ -83,7 +87,8 @@ public class DecoderBlockEntity extends BlockEntity {
     }
 
     public int getOutputPower(Direction direction) {
-        if (!direction.getAxis().isHorizontal()) return 0;
+        if (!direction.getAxis().isHorizontal())
+            return 0;
         return outputPowers.getOrDefault(direction, 0);
     }
 
@@ -108,7 +113,8 @@ public class DecoderBlockEntity extends BlockEntity {
                 outputPowers.put(d, outputs.getInt(d.getName()));
             }
         } else {
-            for (Direction d : Direction.values()) outputPowers.put(d, 0);
+            for (Direction d : Direction.values())
+                outputPowers.put(d, 0);
         }
     }
 }

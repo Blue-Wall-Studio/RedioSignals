@@ -1,33 +1,32 @@
 package org.BlueWallStudio.argest.wireless.transmitter;
 
 import java.util.Set;
+import net.minecraft.world.World;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.Block;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.state.property.Properties;
 import org.BlueWallStudio.argest.signal.SignalPacket;
 import org.BlueWallStudio.argest.wire.WireDetector;
 import org.BlueWallStudio.argest.wireless.WirelessTransmissionConfig;
 
-// Реализация передатчика для цепи (с проверкой оси)
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.Direction.Axis;
-
+// Transmitter implementation for the chain (with axis check)
 public class ChainTransmitter implements WirelessTransmitter {
 
     @Override
     public boolean canTransmit(World world, BlockPos pos, SignalPacket packet) {
         BlockState state = world.getBlockState(pos);
 
-        // Проверяем, что это цепь
+        // Check if is chain
         if (!state.isOf(Blocks.CHAIN)) {
             return false;
         }
 
-        // Проверяем, что цепь прикреплена к проводу И что ось цепи подходит под
-        // направление к проводу
+        // Check, that chain is connected to the wire and that chain axis is compatible
+        // with wire direction
         return hasAdjacentWireWithMatchingAxis(world, pos, state);
     }
 
@@ -99,11 +98,11 @@ public class ChainTransmitter implements WirelessTransmitter {
     }
 
     /**
-     * Ищем соседний провод, но учитываем ось цепи:
-     * направление от цепи к соседнему блоку должно иметь ту же ось, что и цепь.
+     * Search for neighboring wire, considering chain axis:
+     * direction from chain to neighbor block must have same axis, as the chain
      */
     private boolean hasAdjacentWireWithMatchingAxis(World world, BlockPos chainPos, BlockState chainState) {
-        // Получаем ось цепи (если по каким-то причинам свойства нет — допускаем все)
+        // Get chain axis (if for some reasons property is absent - allow all)
         Axis chainAxis = null;
         if (chainState.contains(Properties.AXIS)) {
             chainAxis = chainState.get(Properties.AXIS);
@@ -114,16 +113,16 @@ public class ChainTransmitter implements WirelessTransmitter {
             if (!WireDetector.isWire(world, neighbor))
                 continue;
 
-            // Если ось известна, требуем совпадения оси направления с осью цепи
+            // If axis is known, require direction axis to match with chain axis
             if (chainAxis != null) {
                 if (dir.getAxis() == chainAxis) {
                     return true;
                 } else {
-                    // найден провод, но он идёт по оси, несовместимой с цепью — игнорируем
+                    // Wire found, but in goes by incompatioble axis - ignore
                     continue;
                 }
             } else {
-                // если ось не доступна — просто считаем, что провод рядом достаточен
+                // If axis is not available - assume, that neighbor wire is enough
                 return true;
             }
         }
@@ -133,19 +132,18 @@ public class ChainTransmitter implements WirelessTransmitter {
     @Override
     public WirelessTransmissionConfig getTransmissionConfig(World world, BlockPos pos, SignalPacket packet,
             Direction entryDirection) {
-        // Опционально: здесь можно ещё дополнительно сверить entryDirection.getAxis() с
-        // осью цепи,
-        // если хотите двойную страховку.
+        // Optionally can match entryDirection.getAxis() with chain axis, if want an
+        // additional checks
         BlockState state = world.getBlockState(pos);
         if (state.isOf(Blocks.CHAIN) && state.contains(Properties.AXIS)) {
             Axis chainAxis = state.get(Properties.AXIS);
             if (entryDirection != null && entryDirection.getAxis() != chainAxis) {
-                // Если входящее направление не по оси цепи — отменяем передачу.
-                return null; // или вернуть конфиг, означающий "не передавать"
+                // If incoming direction isn't in the chain axis - cancel transmission
+                return null; // or return config that means "don't transmit"
             }
         }
 
-        // Цепь передает в том же направлении, откуда пришел пакет
+        // Chain transmits in same direction that package is received from
         return WirelessTransmissionConfig.chain(entryDirection);
     }
 

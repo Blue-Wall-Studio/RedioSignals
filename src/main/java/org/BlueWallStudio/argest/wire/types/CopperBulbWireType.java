@@ -9,8 +9,8 @@ import org.BlueWallStudio.argest.signal.SignalPacket;
 import java.util.*;
 
 /**
- * Лампочка на медном проводе. Повторно использует логику меди.
- * Меняет состояние LIT каждый раз при получении пакета, если НЕ запитана редстоуном.
+ * Bulb on copper wire. Re-uses copper logic. Changes LIT state at each package
+ * receive, if NOT powered by redstone
  */
 public class CopperBulbWireType extends CopperWireType {
 
@@ -23,18 +23,18 @@ public class CopperBulbWireType extends CopperWireType {
     public boolean processPacket(World world, BlockPos pos, SignalPacket packet) {
         BlockState currentState = world.getBlockState(pos);
 
-        // Проверяем, запитана ли лампа внешним редстоуном
+        // Check if lamp is powered by external redstone
         boolean isPowered = world.isReceivingRedstonePower(pos);
 
         if (!isPowered) {
-            // Берём текущее значение LIT (предполагается, что BulbBlock имеет свойство LIT)
+            // Take current LIT value (assuming BulbBlock has LIT property)
             boolean currentLit = currentState.get(net.minecraft.block.BulbBlock.LIT);
             world.setBlockState(pos, currentState.with(net.minecraft.block.BulbBlock.LIT, !currentLit));
         }
 
-        // Продолжаем передачу как обычный провод
+        // Continue transmission as a regular wire
         return true;
     }
 
-    // Не переопределяем getExitDirections — используем поведение CopperWireType
+    // Don't redefine getExitDirections - use CopperWireType behaviour
 }

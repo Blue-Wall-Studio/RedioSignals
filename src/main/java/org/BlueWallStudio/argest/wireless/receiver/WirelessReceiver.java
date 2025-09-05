@@ -5,21 +5,22 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import org.BlueWallStudio.argest.signal.SignalPacket;
 
-// Интерфейс для блоков, которые могут принимать беспроводные сигналы
+// interface for blocks that can receive wireless signals
 public interface WirelessReceiver {
     /**
-     * Проверяет, может ли этот блок принимать беспроводные сигналы
+     * Check, if block can receive wireless signals
      */
     boolean canReceiveWireless(World world, BlockPos pos, SignalPacket packet);
 
     /**
-     * Обрабатывает получение беспроводного сигнала
-     * @return модифицированный пакет или null если пакет должен быть уничтожен
+     * Processes wireless packet reception
+     * 
+     * @return modified package or null if packet must be destroyed
      */
     SignalPacket processWirelessReception(World world, BlockPos pos, SignalPacket packet, Direction from);
 
     /**
-     * Приоритет приемника (больше = выше приоритет)
+     * Receiver priority (more = higher priority)
      */
     default int getReceiverPriority() {
         return 0;

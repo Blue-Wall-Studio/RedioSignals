@@ -30,9 +30,8 @@ public class ModBlocks {
         ENCODER_BLOCK = Blocks.register(
                 encoderKey,
                 EncoderBlock::new,
-                AbstractBlock.Settings.create().strength(3.0f).requiresTool()
-        );
-        Items.register(ENCODER_BLOCK); // автоматически создаёт BlockItem
+                AbstractBlock.Settings.create().strength(3.0f).requiresTool());
+        Items.register(ENCODER_BLOCK); // automatically creates BlockItem
 
         // Decoder
         Identifier decoderId = Identifier.of(Argest.MOD_ID, "decoder");
@@ -41,21 +40,18 @@ public class ModBlocks {
         DECODER_BLOCK = Blocks.register(
                 decoderKey,
                 DecoderBlock::new,
-                AbstractBlock.Settings.create().strength(3.0f).requiresTool()
-        );
+                AbstractBlock.Settings.create().strength(3.0f).requiresTool());
         Items.register(DECODER_BLOCK);
 
         // BlockEntities
         ENCODER_BLOCK_ENTITY = Registry.register(
                 Registries.BLOCK_ENTITY_TYPE,
                 encoderId,
-                FabricBlockEntityTypeBuilder.create(EncoderBlockEntity::new, ENCODER_BLOCK).build()
-        );
+                FabricBlockEntityTypeBuilder.create(EncoderBlockEntity::new, ENCODER_BLOCK).build());
 
         DECODER_BLOCK_ENTITY = Registry.register(
                 Registries.BLOCK_ENTITY_TYPE,
                 decoderId,
-                FabricBlockEntityTypeBuilder.create(DecoderBlockEntity::new, DECODER_BLOCK).build()
-        );
+                FabricBlockEntityTypeBuilder.create(DecoderBlockEntity::new, DECODER_BLOCK).build());
     }
 }

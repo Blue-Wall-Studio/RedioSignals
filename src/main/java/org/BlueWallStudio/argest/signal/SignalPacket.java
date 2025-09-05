@@ -13,7 +13,7 @@ public class SignalPacket {
     private final SignalType signalType;
     private final BlockPos currentPos;
     private final Direction currentDirection;
-    private final int creationTick; // Серверный тик создания пакета
+    private final int creationTick; // Server tick for packet creation
     private final int totalStrength;
 
     public SignalPacket(int[] strengths, SignalType type, BlockPos pos, Direction dir, int creationTick) {
@@ -25,18 +25,10 @@ public class SignalPacket {
         this.totalStrength = calculateTotalStrength(strengths);
     }
 
-    // Конструктор для создания с текущим серверным тиком
+    // Constructor for creating packet with current server tick as creation tick
     public SignalPacket(int[] strengths, SignalType type, BlockPos pos, Direction dir, ServerWorld world) {
         this(strengths, type, pos, dir, getCurrentServerTick(world));
     }
-
-    // Конструктор для загрузки из NBT с явным указанием тика
-    /*
-     * public static SignalPacket fromSavedData(int[] strengths, SignalType type,
-     * BlockPos pos, Direction dir, int savedTick) {
-     * return new SignalPacket(strengths, type, pos, dir, world, savedTick);
-     * }
-     */
 
     /*
      * Serialization
@@ -63,13 +55,13 @@ public class SignalPacket {
     private static int calculateTotalStrength(int[] strengths) {
         int total = 0;
         for (int strength : strengths) {
-            total += Math.max(0, strength); // Игнорируем отрицательные значения
+            total += Math.max(0, strength); // Ignore negative values
         }
         return total;
     }
 
     private static int getCurrentServerTick(ServerWorld world) {
-        // Используем серверный тик - это правильный способ для игровой логики
+        // Use server tick - it's the correct method for game logic
         return world.getServer().getTicks();
     }
 
@@ -78,7 +70,7 @@ public class SignalPacket {
     }
 
     public SignalPacket withNewPosition(BlockPos newPos, Direction newDir) {
-        // Сохраняем тот же тик создания при перемещении
+        // Save same creation tick when moving
         return new SignalPacket(signalStrengths, signalType, newPos, newDir, creationTick);
     }
 
@@ -94,7 +86,7 @@ public class SignalPacket {
         return getAge(currentTick) > maxLifetimeTicks;
     }
 
-    // Геттеры
+    // Getters
     public int[] getSignalStrengths() {
         return signalStrengths.clone();
     }

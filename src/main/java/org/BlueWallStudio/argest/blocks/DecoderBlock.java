@@ -55,9 +55,10 @@ public class DecoderBlock extends BlockWithEntity {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state,
-                                                                  BlockEntityType<T> type) {
-        return world.isClient ? null : validateTicker(type, ModBlocks.DECODER_BLOCK_ENTITY,
-                DecoderBlockEntity::tick);
+            BlockEntityType<T> type) {
+        return world.isClient ? null
+                : validateTicker(type, ModBlocks.DECODER_BLOCK_ENTITY,
+                        DecoderBlockEntity::tick);
     }
 
     @Override
@@ -67,8 +68,9 @@ public class DecoderBlock extends BlockWithEntity {
 
     @Override
     public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-        // Отдаём силу только по горизонтальным сторонам
-        if (!direction.getAxis().isHorizontal()) return 0;
+        // Transmit power only in horizontal directions
+        if (!direction.getAxis().isHorizontal())
+            return 0;
 
         BlockEntity be = world.getBlockEntity(pos);
         if (be instanceof DecoderBlockEntity decoder) {
@@ -79,8 +81,9 @@ public class DecoderBlock extends BlockWithEntity {
 
     @Override
     public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-        // То же самое, что и для слабого сигнала
-        if (!direction.getAxis().isHorizontal()) return 0;
+        // Same as for weak signal
+        if (!direction.getAxis().isHorizontal())
+            return 0;
 
         BlockEntity be = world.getBlockEntity(pos);
         if (be instanceof DecoderBlockEntity decoder) {

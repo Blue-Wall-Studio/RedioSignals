@@ -16,11 +16,11 @@ public class PacketVisualizer {
     public void showPacketCreation(ServerWorld world, SignalPacket packet, Set<UUID> debugPlayers) {
         BlockPos pos = packet.getCurrentPos();
 
-        // Показываем частицы ветра (или другие подходящие)
+        // Show wind particles (or other matching ones)
         for (UUID playerId : debugPlayers) {
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerId);
             if (player != null && player.getWorld() == world) {
-                // Частицы для визуализации создания пакета - исправленный вызов
+                // Particles for packet creation visualisation - fixed call
                 if (config.showParticles) {
                     world.spawnParticles(
                             new DustParticleEffect(0x00FF00, 1.0f),
@@ -28,7 +28,7 @@ public class PacketVisualizer {
                             10, 0.3, 0.3, 0.3, 0.1);
                 }
 
-                // Информация в чат
+                // Display text information on screen
                 player.sendMessage(Text.literal(String.format(
                         "§a[Packet Created] Pos: %s, Strength: %s, Type: %s",
                         pos.toShortString(),
@@ -45,7 +45,7 @@ public class PacketVisualizer {
         for (UUID playerId : debugPlayers) {
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerId);
             if (player != null && player.getWorld() == world) {
-                // Частицы движения - синие (исправленный вызов)
+                // Blue move particles (fixed call)
                 if (config.showParticles) {
                     world.spawnParticles(
                             new DustParticleEffect(0x0066FF, 1.0f),
@@ -53,7 +53,7 @@ public class PacketVisualizer {
                             5, 0.2, 0.2, 0.2, 0.05);
                 }
 
-                // Создаем текстовый дисплей для направления
+                // Create text display for direction
                 createDirectionDisplay(world, newPos, newPacket.getCurrentDirection());
             }
         }
@@ -65,7 +65,7 @@ public class PacketVisualizer {
         for (UUID playerId : debugPlayers) {
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerId);
             if (player != null && player.getWorld() == world) {
-                // Красные частицы смерти (исправленный вызов)
+                // Red death particles (fixed call)
                 if (config.showParticles) {
                     world.spawnParticles(
                             new DustParticleEffect(0xFF0000, 1.0f),
@@ -73,7 +73,7 @@ public class PacketVisualizer {
                             15, 0.4, 0.4, 0.4, 0.2);
                 }
 
-                // Сообщение в чат
+                // Display text information on screen
                 player.sendMessage(Text.literal(String.format(
                         "§c[Packet Died] Pos: %s, Reason: %s",
                         pos.toShortString(), reason)), true);
@@ -82,12 +82,12 @@ public class PacketVisualizer {
     }
 
     private void createDirectionDisplay(ServerWorld world, BlockPos pos, net.minecraft.util.math.Direction direction) {
-        // Создаем временный текстовый дисплей
-        // Примечание: движущиеся дисплеи сложны, но можно создавать и удалять их
+        // Create temporary text display
+        // NOTE: moving displays is hard, but they can be deleted and recreated
         Vec3d displayPos = Vec3d.ofCenter(pos).add(0, 1, 0);
 
-        // Для упрощения показываем только статичный текст
-        // В полной реализации можно использовать DisplayEntity.TextDisplayEntity
-        // и управлять его позицией через NBT или пересоздание
+        // Display only static text for simplicity
+        // In final implementation we can use DisplayEntity.TextDisplayEntity
+        // and manage its position via NBT or recreation
     }
 }

@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-// Реестр беспроводных приемников
+// Wireless receivers registry
 public class WirelessReceiverRegistry {
     private static final Map<Block, WirelessReceiver> receivers = new HashMap<>();
 
@@ -26,12 +26,12 @@ public class WirelessReceiverRegistry {
         return getReceiver(world.getBlockState(pos)).isPresent();
     }
 
-    // Инициализация встроенных приемников
+    // Built-in receivers initialization
     public static void initializeDefaults() {
-        // Медная решетка как приемник
+        // Copper grate as receiver
         register(Blocks.COPPER_GRATE, new CopperGrateReceiver());
 
-        // Можно добавить другие приемники в будущем
+        // Could add other receiverns in the future
         // register(ModBlocks.CUSTOM_RECEIVER, new CustomReceiver());
     }
 }

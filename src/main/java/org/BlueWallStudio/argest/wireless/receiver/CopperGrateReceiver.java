@@ -8,7 +8,7 @@ import org.BlueWallStudio.argest.signal.SignalPacket;
 import org.BlueWallStudio.argest.signal.SignalType;
 import org.BlueWallStudio.argest.wire.WireDetector;
 
-// Реализация приемника для медной решетки
+// Receiver implementation for copper grate
 public class CopperGrateReceiver implements WirelessReceiver {
 
     @Override
@@ -18,11 +18,11 @@ public class CopperGrateReceiver implements WirelessReceiver {
 
     @Override
     public SignalPacket processWirelessReception(World world, BlockPos pos, SignalPacket packet, Direction from) {
-        // Сделаем пакет нисходящим
+        // Make paket descending
         int[] strengths = packet.getSignalStrengths();
         int creationTick = packet.getCreationTick();
 
-        // 1) Предпочтительно: идти в ту же сторону, откуда пришёл пакет
+        // Preferrably go into same direction that package came from
         Direction preferred = from != null ? from : packet.getCurrentDirection();
         if (preferred != null) {
             BlockPos forward = pos.offset(preferred);
@@ -31,8 +31,8 @@ public class CopperGrateReceiver implements WirelessReceiver {
             }
         }
 
-        // 2) Пытаемся найти любой соседний провод/декодер (на случай, если провод
-        // подключён не прямо вперед)
+        // Then, try to find any neighboring wire/decoder (if wire is not connected
+        // right ahead)
         for (Direction d : Direction.values()) {
             BlockPos np = pos.offset(d);
             if (WireDetector.isWire(world, np) || WireDetector.isDecoder(world, np)) {
@@ -40,7 +40,7 @@ public class CopperGrateReceiver implements WirelessReceiver {
             }
         }
 
-        // 3) Если проводов рядом нет — уничтожаем пакет (возвращаем null)
+        // If no wires nearby - kill the packet (return null)
         return null;
     }
 

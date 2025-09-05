@@ -23,16 +23,16 @@ public class ModConfig {
     private static final File CONFIG_FILE = new File(
             FabricLoader.getInstance().getConfigDir().toFile(), CONFIG_FILENAME);
 
-    // Настройки отладки
+    // Debug settings
     public boolean showParticles = true;
 
-    // Настройки производительности (в тиках)
-    public int maxPacketLifetimeTicks = 100; // 5 секунд при 20 TPS
-    public int signalProcessingDelay = 1; // Каждый тик
+    // Performance settings (in ticks)
+    public int maxPacketLifetimeTicks = 100; // 5 seconds (assuming 20 TPS)
+    public int signalProcessingDelay = 1; // Every tick
     public int maxPacketsPerTick = 100;
 
     private ModConfig() {
-        // Приватный конструктор для Singleton
+        // Private constructor for Singleton
     }
 
     public static ModConfig getInstance() {
@@ -68,7 +68,7 @@ public class ModConfig {
 
     public void save() {
         try {
-            // Создаем директорию конфигурации если она не существует
+            // Create config directory if doesn't exist
             File configDir = CONFIG_FILE.getParentFile();
             if (!configDir.exists() && !configDir.mkdirs()) {
                 throw new IOException("Could not create config directory: " + configDir);
@@ -83,7 +83,7 @@ public class ModConfig {
     }
 
     private void validate() {
-        // Валидация и коррекция значений конфигурации
+        // Config values correction and validation
         maxPacketLifetimeTicks = Math.max(-1, maxPacketLifetimeTicks);
         signalProcessingDelay = Math.max(1, signalProcessingDelay);
         maxPacketsPerTick = Math.max(-1, Math.min(1000, maxPacketsPerTick));
@@ -95,7 +95,7 @@ public class ModConfig {
         }
     }
 
-    // Удобные методы для преобразования тиков
+    // Methods for convenient ticks/seconds transformation
     public static int secondsToTicks(double seconds) {
         return (int) Math.round(seconds * 20.0); // 20 TPS
     }
@@ -104,7 +104,7 @@ public class ModConfig {
         return ticks / 20.0;
     }
 
-    // Методы для получения значений в разных единицах
+    // Methods for getting values in different units
     public double getMaxPacketLifetimeSeconds() {
         return ticksToSeconds(maxPacketLifetimeTicks);
     }

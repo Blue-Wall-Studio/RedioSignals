@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-// Реестр беспроводных передатчиков
+// Wireless transmitters registry
 public class WirelessTransmitterRegistry {
     private static final Map<Block, WirelessTransmitter> transmitters = new HashMap<>();
 
@@ -27,10 +27,10 @@ public class WirelessTransmitterRegistry {
     }
 
     public static void initializeDefaults() {
-        // Регистрируем цепь как передатчик
+        // Register chain as transmitter
         register(Blocks.CHAIN, new ChainTransmitter());
 
-        // Можно добавить другие передатчики
+        // Add other transmitters in the future
         // register(ModBlocks.RADIO_ANTENNA, new AntennaTransmitter());
     }
 }

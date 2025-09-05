@@ -7,36 +7,36 @@ import org.BlueWallStudio.argest.signal.SignalPacket;
 
 public interface WireType {
     /**
-     * Проверяет, может ли этот тип провода работать с данным блоком
+     * Check, can wire type work with specified block
      */
     boolean canHandle(BlockState blockState);
 
     /**
-     * Обрабатывает прохождение пакета через провод
-     * @return true если пакет может пройти дальше, false если останавливается
+     * Processes packet transfer via wire
+     * 
+     * @return true if paket can go further, false if it stops
      */
     boolean processPacket(World world, BlockPos pos, SignalPacket packet);
 
     /**
-     * Получить приоритет обработки (больше = выше приоритет)
+     * Get processing priority (more = higher priority)
      */
     int getPriority();
 
     /**
-     * Может ли пакет входить в этот провод с указанной стороны
+     * Can package enter wire from specified direction?
      */
     boolean canEnterFrom(World world, BlockPos pos, net.minecraft.util.math.Direction from);
 
     /**
-     * Может ли пакет выходить из этого провода в указанную сторону
+     * Can wire exit wire in specified direction?
      */
     boolean canExitTo(World world, BlockPos pos, net.minecraft.util.math.Direction to);
 
     /**
-     * Получить возможные выходные направления для пакета
+     * Get possible exit directions for the packet
      */
     java.util.List<net.minecraft.util.math.Direction> getExitDirections(
             World world, BlockPos pos, SignalPacket packet,
-            net.minecraft.util.math.Direction entryDirection
-    );
+            net.minecraft.util.math.Direction entryDirection);
 }

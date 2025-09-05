@@ -10,7 +10,7 @@ public class WorldEventHandler {
     private static int INTERVAL = ModConfig.getInstance().signalProcessingDelay;
 
     public static void registerEvents() {
-        // Регистрируем тик сервера для обработки пакетов
+        // Register server tick event for packet processing
         ServerTickEvents.END_SERVER_TICK.register((server) -> {
             tickCounter++;
             if (tickCounter >= INTERVAL) {

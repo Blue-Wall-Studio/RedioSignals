@@ -19,13 +19,13 @@ public class Argest implements ModInitializer {
     public void onInitialize() {
         System.out.println("[Argest] Initializing Argest mod...");
 
-        // Инициализируем конфигурацию
+        // Config initialization
         ModConfig.getInstance();
 
-        // Регистрируем блоки и блок-энтити
+        // Blocks and block entities registration
         ModBlocks.init();
 
-        // Регистрируем типы проводов
+        // Wire types registration
         WireRegistry.init();
 
         WirelessReceiverRegistry.initializeDefaults();
@@ -34,14 +34,14 @@ public class Argest implements ModInitializer {
 
         WorldEventHandler.registerEvents();
 
-        // Настраиваем сетевые пакеты
+        // Network packets configuration
         NetworkHandler.init();
 
-        // Регистрируем команды
+        // Commands registration
         CommandRegistrationCallback.EVENT
                 .register((dispatcher, registryAccess, environment) -> DebugCommand.register(dispatcher, environment));
 
-        // Регистрируем тик-обработчики
+        // Tick event registration
         ServerTickEvents.END_WORLD_TICK.register(world -> SignalManager.tick(world));
 
         System.out.println("[Argest] Mod initialized successfully!");

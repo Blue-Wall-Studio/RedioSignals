@@ -11,8 +11,8 @@ import org.BlueWallStudio.argest.signal.SignalType;
 import java.util.*;
 
 /**
- * Золотой провод: предпочитает идти "вперёд" (в направлении entryDirection), иначе
- * использует приоритеты направлений (UP/DOWN/N/E/S/W) и берёт первое доступное.
+ * Gold wire: prefers going "forward" (in entryDirection), otherwise uses
+ * direction priority (UP/DOWN/N/E/S/W) and takes first available
  */
 public class GoldWireType extends AbstractWireType {
 
@@ -23,7 +23,7 @@ public class GoldWireType extends AbstractWireType {
 
     @Override
     public boolean processPacket(World world, BlockPos pos, SignalPacket packet) {
-        return true; // просто передаёт дальше
+        return true; // Just passes further
     }
 
     @Override
@@ -33,11 +33,11 @@ public class GoldWireType extends AbstractWireType {
 
     @Override
     public List<Direction> getExitDirections(World world, BlockPos pos,
-                                             SignalPacket packet, Direction entryDirection) {
+            SignalPacket packet, Direction entryDirection) {
         List<Direction> exits = new ArrayList<>();
         SignalType signalType = packet.getSignalType();
 
-        // 1) Попробовать прямо (вперёд)
+        // Firstly, try forward
         if (entryDirection != null) {
             Direction forward = entryDirection;
             if (canPacketGoInDirection(signalType, forward) && hasValidTargetAt(world, pos.offset(forward))) {
@@ -46,39 +46,48 @@ public class GoldWireType extends AbstractWireType {
             }
         }
 
-        // 2) Иначе — собрать все допустимые направления и отсортировать по приоритету
+        // 2) Otherwise, collect all available directions and sort by priority
         Direction[] dirs = Direction.values();
-        Arrays.sort(dirs, Comparator.comparingInt((Direction d) -> getDirectionPriority(d, signalType, entryDirection)).reversed());
+        Arrays.sort(dirs, Comparator.comparingInt((Direction d) -> getDirectionPriority(d, signalType, entryDirection))
+                .reversed());
 
         for (Direction dir : dirs) {
-            // не идём назад
-            if (entryDirection != null && dir == entryDirection.getOpposite()) continue;
-            if (!canPacketGoInDirection(signalType, dir)) continue;
+            // Don't go back
+            if (entryDirection != null && dir == entryDirection.getOpposite())
+                continue;
+            if (!canPacketGoInDirection(signalType, dir))
+                continue;
 
             if (hasValidTargetAt(world, pos.offset(dir))) {
                 exits.add(dir);
-                break; // берём только первое доступное
+                break; // Take only first available
             }
         }
         return exits;
     }
 
     private boolean canPacketGoInDirection(SignalType signalType, Direction dir) {
-        if (signalType == SignalType.ASCENDING) return dir != Direction.DOWN;
-        if (signalType == SignalType.DESCENDING) return dir != Direction.UP;
+        if (signalType == SignalType.ASCENDING)
+            return dir != Direction.DOWN;
+        if (signalType == SignalType.DESCENDING)
+            return dir != Direction.UP;
         return true;
     }
 
     private int getDirectionPriority(Direction dir, SignalType signalType, Direction entry) {
-        // Если назад — низший приоритет
-        if (entry != null && dir == entry.getOpposite()) return -1000;
+        // Low priority if backwards
+        if (entry != null && dir == entry.getOpposite())
+            return -1000;
 
-        // Очень высокая приоритетность для вертикалей (если соответствует типу сигнала)
-        if (dir == Direction.UP && signalType == SignalType.ASCENDING) return 100;
-        if (dir == Direction.DOWN && signalType == SignalType.DESCENDING) return 100;
-        if (dir == Direction.UP || dir == Direction.DOWN) return 50;
+        // Very high priority for verticals (if signal matches type)
+        if (dir == Direction.UP && signalType == SignalType.ASCENDING)
+            return 100;
+        if (dir == Direction.DOWN && signalType == SignalType.DESCENDING)
+            return 100;
+        if (dir == Direction.UP || dir == Direction.DOWN)
+            return 50;
 
-        // Горизонтальные приоритеты: N > E > S > W (как в вашем примере)
+        // Horizontal priorities: N > E > S > W (as in above example)
         if (dir.getAxis().isHorizontal()) {
             return switch (dir) {
                 case NORTH -> 70;

@@ -11,7 +11,7 @@ import org.BlueWallStudio.argest.signal.SignalType;
 import java.util.*;
 
 /**
- * Медный провод — базовая реализация маршрутизации.
+ * Copper wire - basic routing implementation
  */
 public class CopperWireType extends AbstractWireType {
 
@@ -22,7 +22,7 @@ public class CopperWireType extends AbstractWireType {
 
     @Override
     public boolean processPacket(World world, BlockPos pos, SignalPacket packet) {
-        // Медь передаёт пакеты без побочных эффектов
+        // Copper transmits packages without side effects
         return true;
     }
 
@@ -33,26 +33,26 @@ public class CopperWireType extends AbstractWireType {
 
     @Override
     public List<Direction> getExitDirections(World world, BlockPos pos,
-                                             SignalPacket packet, Direction entryDirection) {
+            SignalPacket packet, Direction entryDirection) {
         List<Direction> exits = new ArrayList<>();
         SignalType signalType = packet.getSignalType();
 
         if (signalType == SignalType.ASCENDING) {
-            // Вверх в приоритете
+            // ASCENDING priority
             if (hasValidTargetAt(world, pos.up())) {
                 exits.add(Direction.UP);
             } else {
                 addHorizontalDirections(world, pos, exits, entryDirection, dir -> true, true);
             }
         } else if (signalType == SignalType.DESCENDING) {
-            // Вниз в приоритете
+            // DESCENDING priority
             if (hasValidTargetAt(world, pos.down())) {
                 exits.add(Direction.DOWN);
             } else {
                 addHorizontalDirections(world, pos, exits, entryDirection, dir -> true, true);
             }
         } else {
-            // Обычный сигнал — все направления (включая вертикальные)
+            // Common signal - all directions (including vertical)
             addAllDirections(world, pos, exits, entryDirection, dir -> true, true);
         }
 

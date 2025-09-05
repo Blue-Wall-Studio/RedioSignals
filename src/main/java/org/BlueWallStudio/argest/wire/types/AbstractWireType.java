@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * Абстрактный базовый класс, содержащий общие утилиты и безопасные реализации
- * для большинства типовых операций провода.
+ * Abstract base class, containing general utilities and safe implementations
+ * for most typical wire operations
  */
 public abstract class AbstractWireType implements WireType {
 
@@ -26,21 +26,22 @@ public abstract class AbstractWireType implements WireType {
     }
 
     /**
-     * Есть ли провод (любой тип) в указанной позиции.
+     * Is there (any) wire in specified position?
      */
     protected boolean hasWireAt(World world, BlockPos pos) {
         return WireDetector.isWire(world, pos);
     }
 
     /**
-     * Есть ли провод ИЛИ декодер в указанной позиции.
+     * Is there a wire OR a decoder in specified position?
      */
     protected boolean hasWireOrDecoderAt(World world, BlockPos pos) {
         return WireDetector.isWire(world, pos) || WireDetector.isDecoder(world, pos);
     }
 
     /**
-     * Есть ли что-то, что может принять пакет (провод, декодер, беспроводные компоненты).
+     * Is there anything that can receive the package (wire/decoder/wireless
+     * component) at specified position?
      */
     protected boolean hasValidTargetAt(World world, BlockPos pos) {
         return WireDetector.isWire(world, pos)
@@ -50,55 +51,59 @@ public abstract class AbstractWireType implements WireType {
     }
 
     /**
-     * Безопасная реализация: добавляет первое горизонтальное направление по часовой,
-     * начиная с next clockwise of entry (если entry горизонтален), с возможностью
-     * дополнительной проверки через predicate (например, проверка canPacketGoInDirection).
+     * Safe implementation: add first horisontal direction clockwise, starting with
+     * next clockwise entry (if entry is horisontal), with ability of additional
+     * verification via predicate (i.e. the canPacketGoInDirection check)
      *
-     * entry может быть null.
+     * entry can be null.
      */
     protected void addHorizontalDirections(World world, BlockPos pos,
-                                           List<Direction> exits,
-                                           Direction entry,
-                                           Predicate<Direction> extraAllowed,
-                                           boolean requireWireOrDecoder) {
-        Direction[] horizontal = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+            List<Direction> exits,
+            Direction entry,
+            Predicate<Direction> extraAllowed,
+            boolean requireWireOrDecoder) {
+        Direction[] horizontal = { Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST };
 
         int startIndex = 0;
         if (entry != null && entry.getAxis().isHorizontal()) {
             int idx = indexOf(horizontal, entry);
-            startIndex = (idx + 1) % horizontal.length; // следующий по часовой от entry
+            startIndex = (idx + 1) % horizontal.length; // next clockwise from entry
         }
 
         Direction entryOpposite = (entry == null) ? null : entry.getOpposite();
 
         for (int i = 0; i < horizontal.length; i++) {
             Direction dir = horizontal[(startIndex + i) % horizontal.length];
-            if (entryOpposite != null && dir == entryOpposite) continue;
-            if (extraAllowed != null && !extraAllowed.test(dir)) continue;
+            if (entryOpposite != null && dir == entryOpposite)
+                continue;
+            if (extraAllowed != null && !extraAllowed.test(dir))
+                continue;
 
             BlockPos target = pos.offset(dir);
             boolean ok = requireWireOrDecoder ? hasValidTargetAt(world, target) : hasWireAt(world, target);
             if (ok) {
                 exits.add(dir);
-                break; // берем первое доступное
+                break; // take first available
             }
         }
     }
 
     /**
-     * Добавляет все направления (включая вертикальные), с безопасной защитой от возврата назад.
-     * Можно передать predicate для дополнительных условий (например, запретить направление).
+     * Adds all directions (including vertical) with safety from going back
+     * Can pass predicate for additional conditions (i.e. prohibit directions)
      */
     protected void addAllDirections(World world, BlockPos pos,
-                                    List<Direction> exits,
-                                    Direction entry,
-                                    Predicate<Direction> extraAllowed,
-                                    boolean requireWireOrDecoder) {
+            List<Direction> exits,
+            Direction entry,
+            Predicate<Direction> extraAllowed,
+            boolean requireWireOrDecoder) {
         Direction entryOpposite = (entry == null) ? null : entry.getOpposite();
 
         for (Direction dir : Direction.values()) {
-            if (entryOpposite != null && dir == entryOpposite) continue;
-            if (extraAllowed != null && !extraAllowed.test(dir)) continue;
+            if (entryOpposite != null && dir == entryOpposite)
+                continue;
+            if (extraAllowed != null && !extraAllowed.test(dir))
+                continue;
 
             BlockPos target = pos.offset(dir);
             boolean ok = requireWireOrDecoder ? hasValidTargetAt(world, target) : hasWireAt(world, target);
@@ -109,8 +114,9 @@ public abstract class AbstractWireType implements WireType {
     }
 
     private int indexOf(Direction[] arr, Direction d) {
-        for (int i = 0; i < arr.length; i++) if (arr[i] == d) return i;
+        for (int i = 0; i < arr.length; i++)
+            if (arr[i] == d)
+                return i;
         return 0;
     }
 }
-
