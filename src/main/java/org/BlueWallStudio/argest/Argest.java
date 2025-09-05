@@ -38,10 +38,11 @@ public class Argest implements ModInitializer {
         NetworkHandler.init();
 
         // Регистрируем команды
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> DebugCommand.register(dispatcher, environment));
+        CommandRegistrationCallback.EVENT
+                .register((dispatcher, registryAccess, environment) -> DebugCommand.register(dispatcher, environment));
 
         // Регистрируем тик-обработчики
-        ServerTickEvents.END_WORLD_TICK.register(world -> SignalManager.getInstance(world).tick());
+        ServerTickEvents.END_WORLD_TICK.register(world -> SignalManager.tick(world));
 
         System.out.println("[Argest] Mod initialized successfully!");
     }

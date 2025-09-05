@@ -1,8 +1,6 @@
 package org.BlueWallStudio.argest.wireless.receiver;
 
-import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -23,22 +21,22 @@ public class CopperGrateReceiver implements WirelessReceiver {
         // Сделаем пакет нисходящим
         int[] strengths = packet.getSignalStrengths();
         int creationTick = packet.getCreationTick();
-        ServerWorld serverWorld = (ServerWorld) world;
 
         // 1) Предпочтительно: идти в ту же сторону, откуда пришёл пакет
         Direction preferred = from != null ? from : packet.getCurrentDirection();
         if (preferred != null) {
             BlockPos forward = pos.offset(preferred);
             if (WireDetector.isWire(world, forward) || WireDetector.isDecoder(world, forward)) {
-                return new SignalPacket(strengths, SignalType.DESCENDING, forward, preferred, serverWorld, creationTick);
+                return new SignalPacket(strengths, SignalType.DESCENDING, forward, preferred, creationTick);
             }
         }
 
-        // 2) Пытаемся найти любой соседний провод/декодер (на случай, если провод подключён не прямо вперед)
+        // 2) Пытаемся найти любой соседний провод/декодер (на случай, если провод
+        // подключён не прямо вперед)
         for (Direction d : Direction.values()) {
             BlockPos np = pos.offset(d);
             if (WireDetector.isWire(world, np) || WireDetector.isDecoder(world, np)) {
-                return new SignalPacket(strengths, SignalType.DESCENDING, np, d, serverWorld, creationTick);
+                return new SignalPacket(strengths, SignalType.DESCENDING, np, d, creationTick);
             }
         }
 
@@ -51,4 +49,3 @@ public class CopperGrateReceiver implements WirelessReceiver {
         return 100;
     }
 }
-

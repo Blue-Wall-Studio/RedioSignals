@@ -1,14 +1,16 @@
 package org.BlueWallStudio.argest.debug;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.server.world.ServerWorld;
 import org.BlueWallStudio.argest.signal.SignalPacket;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class DebugManager {
     private static DebugManager instance;
-    private final Set<UUID> debugPlayers = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> debugPlayers = new HashSet<>();
     private final PacketVisualizer visualizer;
 
     private DebugManager() {
@@ -37,18 +39,21 @@ public class DebugManager {
         return debugPlayers.contains(playerId);
     }
 
-    public void onPacketCreated(SignalPacket packet) {
-        if (debugPlayers.isEmpty()) return;
-        visualizer.showPacketCreation(packet, debugPlayers);
+    public void onPacketCreated(ServerWorld world, SignalPacket packet) {
+        if (debugPlayers.isEmpty())
+            return;
+        visualizer.showPacketCreation(world, packet, debugPlayers);
     }
 
-    public void onPacketMoved(SignalPacket oldPacket, SignalPacket newPacket) {
-        if (debugPlayers.isEmpty()) return;
-        visualizer.showPacketMovement(oldPacket, newPacket, debugPlayers);
+    public void onPacketMoved(ServerWorld world, SignalPacket oldPacket, SignalPacket newPacket) {
+        if (debugPlayers.isEmpty())
+            return;
+        visualizer.showPacketMovement(world, oldPacket, newPacket, debugPlayers);
     }
 
-    public void onPacketDied(SignalPacket packet, String reason) {
-        if (debugPlayers.isEmpty()) return;
-        visualizer.showPacketDeath(packet, reason, debugPlayers);
+    public void onPacketDied(ServerWorld world, SignalPacket packet, String reason) {
+        if (debugPlayers.isEmpty())
+            return;
+        visualizer.showPacketDeath(world, packet, reason, debugPlayers);
     }
 }

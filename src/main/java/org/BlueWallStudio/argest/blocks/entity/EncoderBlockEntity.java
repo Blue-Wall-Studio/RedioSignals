@@ -47,7 +47,8 @@ public class EncoderBlockEntity extends BlockEntity {
      * Server tick entrypoint.
      */
     public static void tick(World world, BlockPos ignoredPos, BlockState ignoredState, EncoderBlockEntity entity) {
-        if (world.isClient) return;
+        if (world.isClient)
+            return;
         entity.tickCounter++;
 
         // Connections update periodically or when flagged dirty
@@ -75,7 +76,6 @@ public class EncoderBlockEntity extends BlockEntity {
      */
     private void updateConnections(ServerWorld world) {
         outputDirections.clear();
-        Direction facing = getCachedState().get(EncoderBlock.FACING);
 
         for (Direction dir : Direction.values()) {
             BlockPos adjacentPos = pos.offset(dir);
@@ -104,7 +104,8 @@ public class EncoderBlockEntity extends BlockEntity {
 
             // We consider it an input if it's explicitly a redstone input,
             // or if it's NONE and not an output direction (i.e., free side).
-            if (type == ConnectionType.REDSTONE_INPUT || (type == ConnectionType.NONE && !outputDirections.contains(dir))) {
+            if (type == ConnectionType.REDSTONE_INPUT
+                    || (type == ConnectionType.NONE && !outputDirections.contains(dir))) {
                 int power = world.getEmittedRedstonePower(pos.offset(dir), dir);
                 inputPowers.put(dir, power);
             }
@@ -115,19 +116,22 @@ public class EncoderBlockEntity extends BlockEntity {
      * Determine activation and send signals to all outputs.
      */
     private void tryTransmitSignal(ServerWorld world) {
-        if (outputDirections.isEmpty()) return;
+        if (outputDirections.isEmpty())
+            return;
 
         Direction facing = getCachedState().get(EncoderBlock.FACING);
         Direction activationDir = facing.getOpposite();
 
         // If activation side has no power, bail.
-        if (inputPowers.getOrDefault(activationDir, 0) <= 0) return;
+        if (inputPowers.getOrDefault(activationDir, 0) <= 0)
+            return;
 
         // Collect strengths in explicit order: [left, front, right] relative to facing.
         int[] strengths = getThreeInputStrengths(facing);
 
         // If all three are zero -> nothing to send.
-        if (strengths[0] == 0 && strengths[1] == 0 && strengths[2] == 0) return;
+        if (strengths[0] == 0 && strengths[1] == 0 && strengths[2] == 0)
+            return;
 
         // Currently simplified: always ascending signal
         SignalType signalType = SignalType.ASCENDING;
@@ -136,7 +140,7 @@ public class EncoderBlockEntity extends BlockEntity {
         for (Direction outputDir : outputDirections) {
             BlockPos outputPos = pos.offset(outputDir);
             SignalPacket packet = new SignalPacket(strengths, signalType, outputPos, outputDir, world);
-            SignalManager.getInstance(world).sendPacket(packet);
+            SignalManager.sendPacket(world, packet);
         }
     }
 
@@ -203,4 +207,3 @@ public class EncoderBlockEntity extends BlockEntity {
         DECODER_OUTPUT
     }
 }
-

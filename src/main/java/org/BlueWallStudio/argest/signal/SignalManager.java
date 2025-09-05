@@ -1,430 +1,186 @@
 package org.BlueWallStudio.argest.signal;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtInt;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.RegistryWrapper;
+import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Optional;
+import net.minecraft.world.PersistentState;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.PersistentState;
-import org.BlueWallStudio.argest.blocks.entity.DecoderBlockEntity;
 import org.BlueWallStudio.argest.debug.DebugManager;
+import org.BlueWallStudio.argest.config.ModConfig;
+import org.BlueWallStudio.argest.blocks.entity.DecoderBlockEntity;
 import org.BlueWallStudio.argest.wire.WireDetector;
 import org.BlueWallStudio.argest.wire.WireRegistry;
 import org.BlueWallStudio.argest.wire.WireType;
-import org.BlueWallStudio.argest.config.ModConfig;
-import org.BlueWallStudio.argest.wireless.WirelessTransmissionConfig;
 import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiver;
 import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiverRegistry;
 import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitter;
 import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitterRegistry;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
-public class SignalManager extends PersistentState {
-    private static final Map<ServerWorld, SignalManager> instances = new ConcurrentHashMap<>();
-    private final Set<SignalPacket> activePackets = ConcurrentHashMap.newKeySet();
-    private final ServerWorld world;
-    private boolean dirty = false;
+public class SignalManager {
     private static ModConfig config = ModConfig.getInstance();
 
-    private SignalManager(ServerWorld world) {
-        this.world = world;
+    private static final String KEY = "signal_manager";
+    private static final PersistentState.Type<SignalStorage> STORAGE_TYPE = new PersistentState.Type<>(
+            SignalStorage::new, SignalStorage::createFromNbt, null);
+
+    private static SignalStorage getStorage(ServerWorld world) {
+        return world.getPersistentStateManager().getOrCreate(STORAGE_TYPE, KEY);
     }
 
-    public static SignalManager getInstance(ServerWorld world) {
-        return instances.computeIfAbsent(world, w -> {
-            // Загружаем сохраненные данные
-            String key = "signal_manager_" + w.getRegistryKey().getValue().toString().replace(":", "_");
-            return w.getPersistentStateManager().getOrCreate(
-                    new PersistentState.Type<>(
-                            () -> new SignalManager(w), // supplier для создания нового
-                            (nbt, registries) -> fromNbt(nbt, registries, w), // функция загрузки
-                            null // datafix type (не нужен)
-            ),
-                    key);
-        });
-    }
-
-    public boolean sendPacket(SignalPacket packet) {
+    public static boolean sendPacket(ServerWorld world, SignalPacket packet) {
         if (!packet.isValid()) {
             return false;
         }
 
-        // Ограничиваем количество активных пакетов
-        if (config.maxPacketsPerTick != -1 && activePackets.size() >= config.maxPacketsPerTick) {
+        SignalStorage storage = getStorage(world);
+
+        // Limit number of active packets
+        if (config.maxPacketsPerTick != -1 && getStorage(world).getPackets().size() >= config.maxPacketsPerTick) {
             return false;
         }
 
-        boolean added = activePackets.add(packet);
+        boolean added = storage.getPackets().add(packet);
         if (added) {
-            DebugManager.getInstance().onPacketCreated(packet);
-            markDirty();
+            DebugManager.getInstance().onPacketCreated(world, packet);
         }
         return added;
     }
 
-    public void tick() {
-        int currentServerTick = getCurrentServerTick();
+    // Runs every N ticks (set in mod config)
+    public static void tick(ServerWorld world) {
+        cleanupOldPackets(world);
+        processActivePackets(world);
+    }
 
-        // Обрабатываем пакеты только каждые N тиков для производительности
-        if (currentServerTick % config.signalProcessingDelay != 0) {
-            return;
-        }
-
-        boolean hadChanges = processActivePackets();
-        if (config.maxPacketLifetimeTicks != -1) {
-            hadChanges |= cleanupOldPackets(currentServerTick);
-        }
-
-        if (hadChanges) {
-            markDirty();
+    private static void cleanupOldPackets(ServerWorld world) {
+        SignalStorage storage = getStorage(world);
+        if (config.maxPacketsPerTick != -1) {
+            if (storage.getPackets()
+                    .removeIf(packet -> packet.getAge(getCurrentServerTick(world)) > config.maxPacketLifetimeTicks)) {
+                storage.markDirty();
+            }
         }
     }
 
-    private int getCurrentServerTick() {
-        return world.getServer().getTicks();
-    }
-
-    private boolean processActivePackets() {
-        if (activePackets.isEmpty()) {
-            return false;
-        }
-
-        Set<SignalPacket> packetsToRemove = new HashSet<>();
+    private static void processActivePackets(ServerWorld world) {
+        SignalStorage storage = getStorage(world);
+        Set<SignalPacket> packets = storage.getPackets();
         Set<SignalPacket> newPackets = new HashSet<>();
-        boolean hadChanges = false;
 
-        for (SignalPacket packet : activePackets) {
-            PacketProcessingResult result = processPacket(packet);
+        var iterator = packets.iterator();
+        while (iterator.hasNext()) {
+            SignalPacket packet = iterator.next();
 
-            if (result.shouldRemove()) {
-                packetsToRemove.add(packet);
-                hadChanges = true;
+            BlockPos currentPos = packet.getCurrentPos();
+            Direction currentDir = packet.getCurrentDirection();
+
+            if (WireDetector.isDecoder(world, currentPos)) {
+                handleDecoderReception(world, packet, currentPos, currentDir);
+                DebugManager.getInstance().onPacketDied(world, packet, "Reached decoder");
+
+                // Current packet is processed, kill it and skip to next iteration
+                iterator.remove();
+                continue;
             }
 
-            if (!result.newPackets().isEmpty()) {
-                newPackets.addAll(result.newPackets());
-                hadChanges = true;
-            }
-        }
+            if (WireDetector.isWirelessReceiver(world, currentPos)) {
+                SignalPacket processedPacket = handleWirelessReception(world, packet, currentPos, currentDir);
 
-        activePackets.removeAll(packetsToRemove);
-        activePackets.addAll(newPackets);
+                if (processedPacket != null) {
+                    newPackets.add(processedPacket);
+                }
 
-        return hadChanges;
-    }
+                DebugManager.getInstance().onPacketDied(world, packet, "Processed by wireless receiver");
 
-    private boolean cleanupOldPackets(int currentServerTick) {
-        int maxLifetimeTicks = config.maxPacketLifetimeTicks;
-
-        int sizeBefore = activePackets.size();
-
-        activePackets.removeIf(packet -> packet.getAge(currentServerTick) > maxLifetimeTicks);
-
-        return activePackets.size() != sizeBefore;
-    }
-
-    // Обновленная часть SignalManager с обработкой беспроводных передатчиков
-    private PacketProcessingResult processPacket(SignalPacket packet) {
-        BlockPos currentPos = packet.getCurrentPos();
-        Direction currentDir = packet.getCurrentDirection();
-
-        // Проверяем, является ли текущая позиция декодером
-        if (WireDetector.isDecoder(world, currentPos)) {
-            handleDecoderReception(currentPos, packet, currentDir);
-            DebugManager.getInstance().onPacketDied(packet, "Reached decoder");
-            return PacketProcessingResult.remove();
-        }
-
-        // Проверяем, является ли текущая позиция беспроводным приемником
-        if (WireDetector.isWirelessReceiver(world, currentPos)) {
-            SignalPacket processedPacket = handleWirelessReception(currentPos, packet, currentDir);
-            if (processedPacket != null) {
-                // Пакет был обработан приемником, продолжаем с новым пакетом
-                Set<SignalPacket> newPackets = new HashSet<>();
-                newPackets.add(processedPacket);
-                return PacketProcessingResult.removeAndAdd(newPackets);
-            } else {
-                // Пакет был уничтожен приемником
-                DebugManager.getInstance().onPacketDied(packet, "Processed by wireless receiver");
-                return PacketProcessingResult.remove();
-            }
-        }
-
-        // Проверяем, является ли текущая позиция беспроводным передатчиком
-        if (WireDetector.isWirelessTransmitter(world, currentPos)) {
-            Set<SignalPacket> transmittedPackets = handleWirelessTransmission(currentPos, packet, currentDir);
-            if (!transmittedPackets.isEmpty()) {
-                DebugManager.getInstance().onPacketDied(packet, "Transmitted wirelessly");
-                return PacketProcessingResult.removeAndAdd(transmittedPackets);
-            } else {
-                // Передатчик не смог передать пакет
-                DebugManager.getInstance().onPacketDied(packet, "Wireless transmission failed");
-                return PacketProcessingResult.remove();
-            }
-        }
-
-        // Проверяем, есть ли провод в текущей позиции
-        Optional<WireType> wireType = WireRegistry.getWireType(world.getBlockState(currentPos));
-        if (wireType.isEmpty()) {
-            DebugManager.getInstance().onPacketDied(packet, "No wire at position");
-            return PacketProcessingResult.remove();
-        }
-
-        // Обрабатываем пакет в проводе
-        WireType wire = wireType.get();
-        if (!wire.processPacket(world, currentPos, packet)) {
-            DebugManager.getInstance().onPacketDied(packet, "Wire blocked packet");
-            return PacketProcessingResult.remove();
-        }
-
-        // Получаем возможные выходы
-        List<Direction> exits = wire.getExitDirections(world, currentPos, packet, currentDir);
-        if (exits.isEmpty()) {
-            DebugManager.getInstance().onPacketDied(packet, "No exit directions");
-            return PacketProcessingResult.remove();
-        }
-
-        // Создаем новые пакеты для каждого выхода
-        Set<SignalPacket> newPackets = new HashSet<>();
-        for (Direction exit : exits) {
-            BlockPos nextPos = currentPos.offset(exit);
-
-            // Проверяем, можем ли мы передать сигнал в эту позицию
-            if (WireDetector.canTransmit(world, currentPos, nextPos, exit)) {
-                SignalPacket newPacket = packet.withNewPosition(nextPos, exit);
-                newPackets.add(newPacket);
-                DebugManager.getInstance().onPacketMoved(packet, newPacket);
-            }
-        }
-
-        return PacketProcessingResult.removeAndAdd(newPackets);
-    }
-
-    /**
-     * Обработка беспроводной передачи
-     */
-    private Set<SignalPacket> handleWirelessTransmission(BlockPos pos, SignalPacket packet, Direction entryDirection) {
-        Optional<WirelessTransmitter> transmitter = WirelessTransmitterRegistry.getTransmitter(world.getBlockState(pos));
-        if (transmitter.isEmpty()) {
-            return Collections.emptySet();
-        }
-
-        WirelessTransmitter trans = transmitter.get();
-        if (!trans.canTransmit(world, pos, packet)) {
-            return Collections.emptySet();
-        }
-
-        WirelessTransmissionConfig config = trans.getTransmissionConfig(world, pos, packet, entryDirection);
-        if (config == null) {
-            return Collections.emptySet();
-        }
-
-        // Ищем целевую позицию для беспроводной передачи
-        BlockPos targetPos = findWirelessTarget(pos, config, packet);
-        if (targetPos == null) {
-            return Collections.emptySet();
-        }
-
-        // Создаем новый пакет в целевой позиции
-        SignalPacket newPacket = packet.withNewPosition(targetPos, config.transmissionDirection());
-        Set<SignalPacket> result = new HashSet<>();
-        result.add(newPacket);
-
-        DebugManager.getInstance().onPacketMoved(packet, newPacket);
-        return result;
-    }
-
-    /**
-     * Ищет целевую позицию для беспроводной передачи
-     */
-    private BlockPos findWirelessTarget(BlockPos startPos, WirelessTransmissionConfig config, SignalPacket packet) {
-        Direction dir = config.transmissionDirection();
-        int maxRange = config.maxRange();
-        boolean canPenetrate = config.canPenetrate();
-        Set<Block> blockingBlocks = config.blockingBlocks();
-
-        for (int i = 1; i <= maxRange; i++) {
-            BlockPos checkPos = startPos.offset(dir, i);
-            BlockState checkState = world.getBlockState(checkPos);
-            Block checkBlock = checkState.getBlock();
-
-            // Блокирующие блоки
-            if (blockingBlocks.contains(checkBlock)) {
-                break;
+                iterator.remove();
+                continue;
             }
 
-            if (!canPenetrate && !checkState.isAir() &&
-                    !WireDetector.isWirelessReceiver(world, checkPos)) {
-                break;
-            }
+            if (WireDetector.isWirelessTransmitter(world, currentPos)) {
+                SignalPacket transmittedPacket = handleWirelessTransmission(world, packet, currentPos, currentDir);
 
-            // Если нужен именно приёмник
-            if (config.requireReceiver()) {
-                if (WireDetector.isWirelessReceiver(world, checkPos)) {
-                    return checkPos; // нашли — ок
+                if (transmittedPacket != null) {
+                    DebugManager.getInstance().onPacketDied(world, packet, "Transmitted wirelessly");
+                    newPackets.add(transmittedPacket);
                 } else {
-                    continue; // игнорируем всё остальное
+                    DebugManager.getInstance().onPacketDied(world, packet, "Wireless transmission failed");
+                }
+
+                iterator.remove();
+                continue;
+            }
+
+            // At this point, block is either wire or non electrical
+            Optional<WireType> wireType = WireRegistry.getWireType(world.getBlockState(currentPos));
+            if (wireType.isEmpty()) {
+                DebugManager.getInstance().onPacketDied(world, packet, "No wire at position");
+
+                iterator.remove();
+                continue;
+            }
+
+            WireType wire = wireType.get();
+            if (!wire.processPacket(world, currentPos, packet)) {
+                DebugManager.getInstance().onPacketDied(world, packet, "Wire blocked packet");
+
+                iterator.remove();
+                continue;
+            }
+
+            // Search for exits (next valid circuit blocks) and move packet to them
+            List<Direction> exits = wire.getExitDirections(world, currentPos, packet, currentDir);
+            if (exits.isEmpty()) {
+                DebugManager.getInstance().onPacketDied(world, packet, "No exit directions");
+
+                iterator.remove();
+                continue;
+            }
+
+            for (Direction exit : exits) {
+                BlockPos nextPos = currentPos.offset(exit);
+
+                if (WireDetector.canTransmit(world, currentPos, nextPos, exit)) {
+                    SignalPacket newPacket = packet.withNewPosition(nextPos, exit);
+                    newPackets.add(newPacket);
+                    DebugManager.getInstance().onPacketMoved(world, packet, newPacket);
                 }
             }
 
-            // Обычная логика (если requireReceiver == false)
-            if (WireDetector.isWirelessReceiver(world, checkPos) || WireDetector.isWire(world, checkPos)) {
-                return checkPos;
-            }
+            iterator.remove();
         }
-
-        return null; // ничего не нашли — пакет умирает
+        // Current packet is processed, kill it
+        storage.getPackets().addAll(newPackets);
+        storage.markDirty();
     }
 
-    private void handleDecoderReception(BlockPos pos, SignalPacket packet, Direction entryDirection) {
+    /*
+     * Helper functions
+     */
+    private static int getCurrentServerTick(ServerWorld world) {
+        return world.getServer().getTicks();
+    }
+
+    private static void handleDecoderReception(ServerWorld world, SignalPacket packet, BlockPos pos,
+            Direction entryDirection) {
         if (world.getBlockEntity(pos) instanceof DecoderBlockEntity decoder) {
             decoder.receivePacket(packet, entryDirection);
         }
     }
 
-    private SignalPacket handleWirelessReception(BlockPos pos, SignalPacket packet, Direction entryDirection) {
+    private static SignalPacket handleWirelessReception(ServerWorld world, SignalPacket packet, BlockPos pos,
+            Direction entryDirection) {
         Optional<WirelessReceiver> receiver = WirelessReceiverRegistry.getReceiver(world.getBlockState(pos));
-        if (receiver.isPresent()) {
-            return receiver.get().processWirelessReception(world, pos, packet, entryDirection);
-        }
-        return null;
+
+        return receiver.get().processWirelessReception(world, pos, packet, entryDirection);
     }
 
-    public Set<SignalPacket> getActivePackets() {
-        return Collections.unmodifiableSet(activePackets);
+    private static SignalPacket handleWirelessTransmission(ServerWorld world, SignalPacket packet, BlockPos pos,
+            Direction entryDirection) {
+        Optional<WirelessTransmitter> transmitter = WirelessTransmitterRegistry
+                .getTransmitter(world.getBlockState(pos));
+        return transmitter.get().processWirelessTransmission(world, pos, packet, entryDirection);
     }
-
-    public void clearAllPackets() {
-        activePackets.clear();
-        markDirty();
-    }
-
-    // Реализация PersistentState
-    @Override
-    public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        NbtList packetsNbt = new NbtList();
-
-        for (SignalPacket packet : activePackets) {
-            NbtCompound packetNbt = new NbtCompound();
-
-            // Сохраняем массив сил сигнала
-            int[] strengths = packet.getSignalStrengths();
-            NbtList strengthsNbt = new NbtList();
-            for (int strength : strengths) {
-                strengthsNbt.add(NbtInt.of(strength));
-            }
-            packetNbt.put("strengths", strengthsNbt);
-
-            // Сохраняем тип сигнала
-            packetNbt.putString("signal_type", packet.getSignalType().name());
-
-            // Сохраняем позицию
-            NbtCompound posNbt = new NbtCompound();
-            posNbt.putInt("x", packet.getCurrentPos().getX());
-            posNbt.putInt("y", packet.getCurrentPos().getY());
-            posNbt.putInt("z", packet.getCurrentPos().getZ());
-            packetNbt.put("pos", posNbt);
-
-            // Сохраняем направление
-            packetNbt.putString("direction", packet.getCurrentDirection().name());
-
-            // Сохраняем тик создания
-            packetNbt.putInt("creation_tick", packet.getCreationTick());
-
-            packetsNbt.add(packetNbt);
-        }
-
-        nbt.put("active_packets", packetsNbt);
-        return nbt;
-    }
-
-    public static SignalManager fromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries, ServerWorld world) {
-        SignalManager manager = new SignalManager(world);
-
-        if (nbt.contains("active_packets")) {
-            NbtList packetsNbt = nbt.getList("active_packets", NbtElement.COMPOUND_TYPE);
-
-            for (int i = 0; i < packetsNbt.size(); i++) {
-                NbtCompound packetNbt = packetsNbt.getCompound(i);
-
-                try {
-                    // Загружаем силы сигнала
-                    NbtList strengthsNbt = packetNbt.getList("strengths", NbtElement.INT_TYPE);
-                    int[] strengths = new int[strengthsNbt.size()];
-                    for (int j = 0; j < strengthsNbt.size(); j++) {
-                        strengths[j] = strengthsNbt.getInt(j);
-                    }
-
-                    // Загружаем тип сигнала
-                    SignalType signalType = SignalType.valueOf(packetNbt.getString("signal_type"));
-
-                    // Загружаем позицию
-                    NbtCompound posNbt = packetNbt.getCompound("pos");
-                    BlockPos pos = new BlockPos(
-                            posNbt.getInt("x"),
-                            posNbt.getInt("y"),
-                            posNbt.getInt("z"));
-
-                    // Загружаем направление
-                    Direction direction = Direction.valueOf(packetNbt.getString("direction"));
-
-                    // Загружаем тик создания
-                    int creationTick = packetNbt.getInt("creation_tick");
-
-                    // Создаем пакет
-                    SignalPacket packet = new SignalPacket(strengths, signalType, pos, direction, world, creationTick);
-                    if (packet.isValid()) {
-                        manager.activePackets.add(packet);
-                    }
-                } catch (Exception e) {
-                    // Логируем ошибку и пропускаем поврежденный пакет
-                    System.err.println("Failed to load signal packet: " + e.getMessage());
-                }
-            }
-        }
-
-        return manager;
-    }
-
-    @Override
-    public boolean isDirty() {
-        return dirty;
-    }
-
-    @Override
-    public void markDirty() {
-        this.dirty = true;
-    }
-
-    // Очистка экземпляров при выгрузке мира
-    public static void onWorldUnload(ServerWorld world) {
-        instances.remove(world);
-    }
-
-    // Вспомогательный класс для результатов обработки пакетов
-        private record PacketProcessingResult(boolean shouldRemove, Set<SignalPacket> newPackets) {
-            private PacketProcessingResult(boolean shouldRemove, Set<SignalPacket> newPackets) {
-                this.shouldRemove = shouldRemove;
-                this.newPackets = newPackets != null ? newPackets : Collections.emptySet();
-            }
-
-            public static PacketProcessingResult remove() {
-                return new PacketProcessingResult(true, Collections.emptySet());
-            }
-
-            public static PacketProcessingResult removeAndAdd(Set<SignalPacket> newPackets) {
-                return new PacketProcessingResult(true, newPackets);
-            }
-
-            public static PacketProcessingResult keep() {
-                return new PacketProcessingResult(false, Collections.emptySet());
-            }
-        }
 }

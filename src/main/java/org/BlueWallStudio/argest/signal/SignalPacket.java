@@ -1,6 +1,7 @@
 package org.BlueWallStudio.argest.signal;
 
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
@@ -14,26 +15,49 @@ public class SignalPacket {
     private final Direction currentDirection;
     private final int creationTick; // Серверный тик создания пакета
     private final int totalStrength;
-    private final ServerWorld world;
 
-    public SignalPacket(int[] strengths, SignalType type, BlockPos pos, Direction dir, ServerWorld world, int creationTick) {
+    public SignalPacket(int[] strengths, SignalType type, BlockPos pos, Direction dir, int creationTick) {
         this.signalStrengths = strengths.clone();
         this.signalType = type;
         this.currentPos = pos.toImmutable();
         this.currentDirection = dir;
         this.creationTick = creationTick;
         this.totalStrength = calculateTotalStrength(strengths);
-        this.world = world;
     }
 
     // Конструктор для создания с текущим серверным тиком
     public SignalPacket(int[] strengths, SignalType type, BlockPos pos, Direction dir, ServerWorld world) {
-        this(strengths, type, pos, dir, world, getCurrentServerTick(world));
+        this(strengths, type, pos, dir, getCurrentServerTick(world));
     }
 
     // Конструктор для загрузки из NBT с явным указанием тика
-    public static SignalPacket fromSavedData(int[] strengths, SignalType type, BlockPos pos, Direction dir, ServerWorld world, int savedTick) {
-        return new SignalPacket(strengths, type, pos, dir, world, savedTick);
+    /*
+     * public static SignalPacket fromSavedData(int[] strengths, SignalType type,
+     * BlockPos pos, Direction dir, int savedTick) {
+     * return new SignalPacket(strengths, type, pos, dir, world, savedTick);
+     * }
+     */
+
+    /*
+     * Serialization
+     */
+    public NbtCompound toNbt() {
+        NbtCompound nbt = new NbtCompound();
+        nbt.putIntArray("strength", signalStrengths);
+        nbt.putString("signalType", signalType.name());
+        nbt.putLong("pos", currentPos.asLong());
+        nbt.putInt("dir", currentDirection.getId());
+        nbt.putInt("creationTick", creationTick);
+        return nbt;
+    }
+
+    public static SignalPacket fromNbt(NbtCompound nbt) {
+        int[] strength = nbt.getIntArray("strength");
+        SignalType signalType = SignalType.valueOf(nbt.getString("signalType"));
+        BlockPos pos = BlockPos.fromLong(nbt.getLong("pos"));
+        Direction dir = Direction.byId(nbt.getInt("dir"));
+        int creationTick = nbt.getInt("creationTick");
+        return new SignalPacket(strength, signalType, pos, dir, creationTick);
     }
 
     private static int calculateTotalStrength(int[] strengths) {
@@ -55,11 +79,11 @@ public class SignalPacket {
 
     public SignalPacket withNewPosition(BlockPos newPos, Direction newDir) {
         // Сохраняем тот же тик создания при перемещении
-        return new SignalPacket(signalStrengths, signalType, newPos, newDir, world, creationTick);
+        return new SignalPacket(signalStrengths, signalType, newPos, newDir, creationTick);
     }
 
     public SignalPacket withModifiedStrengths(int[] newStrengths) {
-        return new SignalPacket(newStrengths, signalType, currentPos, currentDirection, world, creationTick);
+        return new SignalPacket(newStrengths, signalType, currentPos, currentDirection, creationTick);
     }
 
     public int getAge(int currentTick) {
@@ -82,21 +106,44 @@ public class SignalPacket {
         return signalStrengths[index];
     }
 
-    public int getLeftStrength() { return signalStrengths[0]; }
-    public int getFrontStrength() { return signalStrengths[1]; }
-    public int getRightStrength() { return signalStrengths[2]; }
+    public int getLeftStrength() {
+        return signalStrengths[0];
+    }
 
-    public SignalType getSignalType() { return signalType; }
-    public BlockPos getCurrentPos() { return currentPos; }
-    public Direction getCurrentDirection() { return currentDirection; }
-    public int getCreationTick() { return creationTick; }
-    public int getTotalStrength() { return totalStrength; }
-    public ServerWorld getWorld() { return world; }
+    public int getFrontStrength() {
+        return signalStrengths[1];
+    }
+
+    public int getRightStrength() {
+        return signalStrengths[2];
+    }
+
+    public SignalType getSignalType() {
+        return signalType;
+    }
+
+    public BlockPos getCurrentPos() {
+        return currentPos;
+    }
+
+    public Direction getCurrentDirection() {
+        return currentDirection;
+    }
+
+    public int getCreationTick() {
+        return creationTick;
+    }
+
+    public int getTotalStrength() {
+        return totalStrength;
+    }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
 
         SignalPacket that = (SignalPacket) obj;
         return creationTick == that.creationTick &&
@@ -104,8 +151,7 @@ public class SignalPacket {
                 Arrays.equals(signalStrengths, that.signalStrengths) &&
                 Objects.equals(signalType, that.signalType) &&
                 Objects.equals(currentPos, that.currentPos) &&
-                currentDirection == that.currentDirection &&
-                Objects.equals(world, that.world);
+                currentDirection == that.currentDirection;
     }
 
     @Override
@@ -116,9 +162,7 @@ public class SignalPacket {
                 currentPos,
                 currentDirection,
                 creationTick,
-                totalStrength,
-                world
-        );
+                totalStrength);
     }
 
     @Override
@@ -126,7 +170,6 @@ public class SignalPacket {
         return String.format(
                 "SignalPacket{pos=%s, dir=%s, strengths=%s, type=%s, tick=%d, total=%d}",
                 currentPos, currentDirection, Arrays.toString(signalStrengths),
-                signalType, creationTick, totalStrength
-        );
+                signalType, creationTick, totalStrength);
     }
 }

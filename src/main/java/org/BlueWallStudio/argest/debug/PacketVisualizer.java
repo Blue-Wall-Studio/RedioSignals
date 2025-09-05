@@ -13,11 +13,7 @@ import org.BlueWallStudio.argest.config.ModConfig;
 public class PacketVisualizer {
     private static ModConfig config = ModConfig.getInstance();
 
-    public void showPacketCreation(SignalPacket packet, Set<UUID> debugPlayers) {
-        ServerWorld world = getWorldFromPacket(packet);
-        if (world == null)
-            return;
-
+    public void showPacketCreation(ServerWorld world, SignalPacket packet, Set<UUID> debugPlayers) {
         BlockPos pos = packet.getCurrentPos();
 
         // Показываем частицы ветра (или другие подходящие)
@@ -42,12 +38,8 @@ public class PacketVisualizer {
         }
     }
 
-    public void showPacketMovement(SignalPacket oldPacket, SignalPacket newPacket, Set<UUID> debugPlayers) {
-        ServerWorld world = getWorldFromPacket(newPacket);
-        if (world == null)
-            return;
-
-        BlockPos oldPos = oldPacket.getCurrentPos();
+    public void showPacketMovement(ServerWorld world, SignalPacket oldPacket, SignalPacket newPacket,
+            Set<UUID> debugPlayers) {
         BlockPos newPos = newPacket.getCurrentPos();
 
         for (UUID playerId : debugPlayers) {
@@ -67,11 +59,7 @@ public class PacketVisualizer {
         }
     }
 
-    public void showPacketDeath(SignalPacket packet, String reason, Set<UUID> debugPlayers) {
-        ServerWorld world = getWorldFromPacket(packet);
-        if (world == null)
-            return;
-
+    public void showPacketDeath(ServerWorld world, SignalPacket packet, String reason, Set<UUID> debugPlayers) {
         BlockPos pos = packet.getCurrentPos();
 
         for (UUID playerId : debugPlayers) {
@@ -101,10 +89,5 @@ public class PacketVisualizer {
         // Для упрощения показываем только статичный текст
         // В полной реализации можно использовать DisplayEntity.TextDisplayEntity
         // и управлять его позицией через NBT или пересоздание
-    }
-
-    // Простая реализация getWorldFromPacket - теперь мир хранится в пакете
-    private ServerWorld getWorldFromPacket(SignalPacket packet) {
-        return packet.getWorld();
     }
 }

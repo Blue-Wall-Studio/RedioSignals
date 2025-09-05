@@ -14,9 +14,17 @@ public interface WirelessTransmitter {
     boolean canTransmit(World world, BlockPos pos, SignalPacket packet);
 
     /**
+     * Handles wireless signal transmission
+     * 
+     * @return modified packet or null if packet should be killed
+     */
+    SignalPacket processWirelessTransmission(World world, BlockPos pos, SignalPacket packet, Direction entryDirection);
+
+    /**
      * Получает конфигурацию передачи для данного передатчика
      */
-    WirelessTransmissionConfig getTransmissionConfig(World world, BlockPos pos, SignalPacket packet, Direction entryDirection);
+    WirelessTransmissionConfig getTransmissionConfig(World world, BlockPos pos, SignalPacket packet,
+            Direction entryDirection);
 
     /**
      * Приоритет передатчика (больше = выше приоритет)
@@ -25,4 +33,3 @@ public interface WirelessTransmitter {
         return 0;
     }
 }
-
