@@ -27,23 +27,26 @@ public class ModConfig {
     public boolean showParticles = true;
 
     // Performance settings (in ticks)
-    public int maxPacketLifetimeTicks = 100; // 5 seconds (assuming 20 TPS)
-    public int signalProcessingDelay = 1; // Every tick
+    public int maxPacketLifetime = 100; // 5 seconds (assuming 20 TPS)
+    public int signalProcessingDelay = 2; // Every 2 ticks
     public int maxPacketsPerTick = 100;
+    public int signalEncodingDelay = 2; // Every 2 ticks
 
     private ModConfig() {
         // Private constructor for Singleton
     }
 
     public static ModConfig getInstance() {
-        if (instance == null) {
-            synchronized (ModConfig.class) {
-                if (instance == null) {
-                    instance = load();
-                }
-            }
+        if (instance != null) {
+            return instance;
         }
-        return instance;
+
+        synchronized (ModConfig.class) {
+            if (instance == null) {
+                instance = load();
+            }
+            return instance;
+        }
     }
 
     private static ModConfig load() {
@@ -84,43 +87,16 @@ public class ModConfig {
 
     private void validate() {
         // Config values correction and validation
-        maxPacketLifetimeTicks = Math.max(-1, maxPacketLifetimeTicks);
+        maxPacketLifetime = Math.max(-1, maxPacketLifetime);
         signalProcessingDelay = Math.max(1, signalProcessingDelay);
-        maxPacketsPerTick = Math.max(-1, Math.min(1000, maxPacketsPerTick));
+        maxPacketsPerTick = Math.max(-1, maxPacketsPerTick);
+        signalEncodingDelay = Math.max(1, signalEncodingDelay);
     }
 
     public void reload() {
         synchronized (ModConfig.class) {
             instance = load();
         }
-    }
-
-    // Methods for convenient ticks/seconds transformation
-    public static int secondsToTicks(double seconds) {
-        return (int) Math.round(seconds * 20.0); // 20 TPS
-    }
-
-    public static double ticksToSeconds(int ticks) {
-        return ticks / 20.0;
-    }
-
-    // Methods for getting values in different units
-    public double getMaxPacketLifetimeSeconds() {
-        return ticksToSeconds(maxPacketLifetimeTicks);
-    }
-
-    public void setMaxPacketLifetimeSeconds(double seconds) {
-        this.maxPacketLifetimeTicks = secondsToTicks(seconds);
-        validate();
-    }
-
-    public double getSignalProcessingDelaySeconds() {
-        return ticksToSeconds(signalProcessingDelay);
-    }
-
-    public void setSignalProcessingDelaySeconds(double seconds) {
-        this.signalProcessingDelay = secondsToTicks(seconds);
-        validate();
     }
 
     @Override

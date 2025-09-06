@@ -59,7 +59,7 @@ public class SignalManager {
         SignalStorage storage = getStorage(world);
         if (config.maxPacketsPerTick != -1) {
             if (storage.getPackets()
-                    .removeIf(packet -> packet.getAge(getCurrentServerTick(world)) > config.maxPacketLifetimeTicks)) {
+                    .removeIf(packet -> packet.getAge(getCurrentServerTick(world)) > config.maxPacketLifetime)) {
                 storage.markDirty();
             }
         }
