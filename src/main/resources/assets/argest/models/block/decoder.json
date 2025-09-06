@@ -7,14 +7,14 @@
         "right": "argest:block/decoder_right",
         "front": "argest:block/decoder_front",
         "back": "argest:block/decoder_back",
-        "particle": "block/observer_front"
+        "particle": "argest:block/decoder_front"
     },
     "elements": [
         {   "from": [ 0, 0, 0 ],
             "to": [ 16, 16, 16 ],
             "faces": {
                 "down":  { "uv": [ 0, 0, 16, 16 ], "texture": "#bottom", "cullface": "down" },
-                "up":    { "uv": [ 0, 16, 16, 0 ], "texture": "#top", "cullface": "up" },
+                "up":    { "uv": [ 0, 0, 16, 16 ], "texture": "#top", "cullface": "up" },
                 "north": { "uv": [ 0, 0, 16, 16 ], "texture": "#front", "cullface": "north" },
                 "south": { "uv": [ 0, 0, 16, 16 ], "texture": "#back", "cullface": "south" },
                 "west":  { "uv": [ 0, 0, 16, 16 ], "texture": "#left", "cullface": "west" },
