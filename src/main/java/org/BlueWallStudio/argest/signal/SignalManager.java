@@ -49,15 +49,18 @@ public class SignalManager {
         return added;
     }
 
-    // Runs every N ticks (set in mod config)
     public static void tick(ServerWorld world) {
+        // Clean up old packets every tick
         cleanupOldPackets(world);
+
+        // Process packets every tick, but move them by SPEED blocks per tick
         processActivePackets(world);
     }
 
     private static void cleanupOldPackets(ServerWorld world) {
         SignalStorage storage = getStorage(world);
-        if (config.maxPacketsPerTick != -1) {
+        // fix: check lifetime config, not maxPacketsPerTick
+        if (config.maxPacketLifetimeTicks != -1) {
             if (storage.getPackets()
                     .removeIf(packet -> packet.getAge(getCurrentServerTick(world)) > config.maxPacketLifetimeTicks)) {
                 storage.markDirty();
@@ -67,92 +70,112 @@ public class SignalManager {
 
     private static void processActivePackets(ServerWorld world) {
         SignalStorage storage = getStorage(world);
-        Set<SignalPacket> packets = storage.getPackets();
-        Set<SignalPacket> newPackets = new HashSet<>();
 
-        var iterator = packets.iterator();
-        while (iterator.hasNext()) {
-            SignalPacket packet = iterator.next();
+        // number of blocks a packet should move per tick
+        final int SPEED = 8; // <- сюда можно подставить config.blocksPerTick если добавите параметр в конфиг
 
-            BlockPos currentPos = packet.getCurrentPos();
-            Direction currentDir = packet.getCurrentDirection();
+        // start from current set of packets
+        Set<SignalPacket> current = new HashSet<>(storage.getPackets());
 
-            if (WireDetector.isDecoder(world, currentPos)) {
-                handleDecoderReception(world, packet, currentPos, currentDir);
-                DebugManager.getInstance().onPacketDied(world, packet, "Reached decoder");
+        // We'll perform SPEED iterations; на каждой итерации перемещаем пакет на 1 блок.
+        for (int step = 0; step < SPEED; step++) {
+            if (current.isEmpty()) break;
 
-                // Current packet is processed, kill it and skip to next iteration
-                iterator.remove();
-                continue;
-            }
+            Set<SignalPacket> next = new HashSet<>();
 
-            if (WireDetector.isWirelessReceiver(world, currentPos)) {
-                SignalPacket processedPacket = handleWirelessReception(world, packet, currentPos, currentDir);
+            for (SignalPacket packet : current) {
+                BlockPos currentPos = packet.getCurrentPos();
+                Direction currentDir = packet.getCurrentDirection();
 
-                if (processedPacket != null) {
-                    newPackets.add(processedPacket);
+                // decoder
+                if (WireDetector.isDecoder(world, currentPos)) {
+                    handleDecoderReception(world, packet, currentPos, currentDir);
+                    DebugManager.getInstance().onPacketDied(world, packet, "Reached decoder");
+                    continue; // packet consumed
                 }
 
-                DebugManager.getInstance().onPacketDied(world, packet, "Processed by wireless receiver");
+                // wireless transmitter
+                if (WireDetector.isWirelessTransmitter(world, currentPos)) {
+                    DebugManager.getInstance().onWirelessTransmission(world, packet);
 
-                iterator.remove();
-                continue;
-            }
+                    SignalPacket transmittedPacket = handleWirelessTransmission(world, packet, currentPos, currentDir);
 
-            if (WireDetector.isWirelessTransmitter(world, currentPos)) {
-                SignalPacket transmittedPacket = handleWirelessTransmission(world, packet, currentPos, currentDir);
+                    if (transmittedPacket != null) {
+                        BlockPos targetPos = transmittedPacket.getCurrentPos();
+                        Direction targetDir = transmittedPacket.getCurrentDirection();
 
-                if (transmittedPacket != null) {
-                    DebugManager.getInstance().onPacketDied(world, packet, "Transmitted wirelessly");
-                    newPackets.add(transmittedPacket);
-                } else {
-                    DebugManager.getInstance().onPacketDied(world, packet, "Wireless transmission failed");
+                        if (WireDetector.isWirelessReceiver(world, targetPos)) {
+                            DebugManager.getInstance().onWirelessReception(world, transmittedPacket);
+
+                            SignalPacket processed = handleWirelessReception(world, transmittedPacket, targetPos, targetDir);
+                            if (processed != null) {
+                                next.add(processed);
+                                DebugManager.getInstance().onPacketMoved(world, packet, processed);
+                            } else {
+                                DebugManager.getInstance().onPacketDied(world, packet, "Wireless receiver blocked packet");
+                            }
+                        } else {
+                            next.add(transmittedPacket);
+                            DebugManager.getInstance().onPacketMoved(world, packet, transmittedPacket);
+                        }
+                    } else {
+                        DebugManager.getInstance().onPacketDied(world, packet, "Wireless transmission failed");
+                    }
+                    continue;
                 }
 
-                iterator.remove();
-                continue;
-            }
+                // wireless receiver (direct hit)
+                if (WireDetector.isWirelessReceiver(world, currentPos)) {
+                    DebugManager.getInstance().onWirelessReception(world, packet);
 
-            // At this point, block is either wire or non electrical
-            Optional<WireType> wireType = WireRegistry.getWireType(world.getBlockState(currentPos));
-            if (wireType.isEmpty()) {
-                DebugManager.getInstance().onPacketDied(world, packet, "No wire at position");
-
-                iterator.remove();
-                continue;
-            }
-
-            WireType wire = wireType.get();
-            if (!wire.processPacket(world, currentPos, packet)) {
-                DebugManager.getInstance().onPacketDied(world, packet, "Wire blocked packet");
-
-                iterator.remove();
-                continue;
-            }
-
-            // Search for exits (next valid circuit blocks) and move packet to them
-            List<Direction> exits = wire.getExitDirections(world, currentPos, packet, currentDir);
-            if (exits.isEmpty()) {
-                DebugManager.getInstance().onPacketDied(world, packet, "No exit directions");
-
-                iterator.remove();
-                continue;
-            }
-
-            for (Direction exit : exits) {
-                BlockPos nextPos = currentPos.offset(exit);
-
-                if (WireDetector.canTransmit(world, currentPos, nextPos, exit)) {
-                    SignalPacket newPacket = packet.withNewPosition(nextPos, exit);
-                    newPackets.add(newPacket);
-                    DebugManager.getInstance().onPacketMoved(world, packet, newPacket);
+                    SignalPacket processed = handleWirelessReception(world, packet, currentPos, currentDir);
+                    if (processed != null) {
+                        next.add(processed);
+                        DebugManager.getInstance().onPacketMoved(world, packet, processed);
+                    } else {
+                        DebugManager.getInstance().onPacketDied(world, packet, "Wireless receiver blocked packet");
+                    }
+                    continue;
                 }
-            }
 
-            iterator.remove();
-        }
-        // Current packet is processed, kill it
-        storage.getPackets().addAll(newPackets);
+                // normal wire processing
+                Optional<WireType> wireType = WireRegistry.getWireType(world.getBlockState(currentPos));
+                if (wireType.isEmpty()) {
+                    DebugManager.getInstance().onPacketDied(world, packet, "No wire at position");
+                    continue;
+                }
+
+                WireType wire = wireType.get();
+                if (!wire.processPacket(world, currentPos, packet)) {
+                    DebugManager.getInstance().onPacketDied(world, packet, "Wire blocked packet");
+                    continue;
+                }
+
+                List<Direction> exits = wire.getExitDirections(world, currentPos, packet, currentDir);
+                if (exits.isEmpty()) {
+                    DebugManager.getInstance().onPacketDied(world, packet, "No exit directions");
+                    continue;
+                }
+
+                // Разветвления: создаём новый пакет для каждого выхода
+                for (Direction exit : exits) {
+                    BlockPos nextPos = currentPos.offset(exit);
+
+                    if (WireDetector.canTransmit(world, currentPos, nextPos, exit)) {
+                        SignalPacket newPacket = packet.withNewPosition(nextPos, exit);
+                        next.add(newPacket);
+                        DebugManager.getInstance().onPacketMoved(world, packet, newPacket);
+                    }
+                }
+            } // end loop current packets
+
+            // готовимся к следующему шагу — обработаем все пакеты, которые получились после этого шага
+            current = next;
+        } // end SPEED loop
+
+        // сохраняем результаты (в текущем наборе current — пакеты после SPEED шагов)
+        storage.getPackets().clear();
+        storage.getPackets().addAll(current);
         storage.markDirty();
     }
 
@@ -164,21 +187,21 @@ public class SignalManager {
     }
 
     private static void handleDecoderReception(ServerWorld world, SignalPacket packet, BlockPos pos,
-            Direction entryDirection) {
+                                               Direction entryDirection) {
         if (world.getBlockEntity(pos) instanceof DecoderBlockEntity decoder) {
             decoder.receivePacket(packet, entryDirection);
         }
     }
 
     private static SignalPacket handleWirelessReception(ServerWorld world, SignalPacket packet, BlockPos pos,
-            Direction entryDirection) {
+                                                        Direction entryDirection) {
         Optional<WirelessReceiver> receiver = WirelessReceiverRegistry.getReceiver(world.getBlockState(pos));
 
         return receiver.get().processWirelessReception(world, pos, packet, entryDirection);
     }
 
     private static SignalPacket handleWirelessTransmission(ServerWorld world, SignalPacket packet, BlockPos pos,
-            Direction entryDirection) {
+                                                           Direction entryDirection) {
         Optional<WirelessTransmitter> transmitter = WirelessTransmitterRegistry
                 .getTransmitter(world.getBlockState(pos));
         return transmitter.get().processWirelessTransmission(world, pos, packet, entryDirection);
