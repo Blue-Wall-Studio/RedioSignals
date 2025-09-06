@@ -17,7 +17,7 @@ import java.util.EnumMap;
 public class DecoderBlockEntity extends BlockEntity {
     private final EnumMap<Direction, Integer> outputPowers = new EnumMap<>(Direction.class);
 
-    private static final int SIGNAL_DURATION = 20; // 20 ticks = 1 second
+    private static final int SIGNAL_DURATION = 10; // Changed from 20 to 2 ticks
     private int ticksUntilReset = 0;
 
     public DecoderBlockEntity(BlockPos pos, BlockState state) {
@@ -57,7 +57,13 @@ public class DecoderBlockEntity extends BlockEntity {
         Direction left = facing.rotateYCounterclockwise();
         Direction right = facing.rotateYClockwise();
 
-        // Resets everything
+        // Store old powers to check what changed
+        EnumMap<Direction, Integer> oldPowers = new EnumMap<>(Direction.class);
+        for (Direction d : Direction.values()) {
+            oldPowers.put(d, outputPowers.getOrDefault(d, 0));
+        }
+
+        // Reset everything
         for (Direction d : Direction.values()) {
             outputPowers.put(d, 0);
         }
@@ -70,20 +76,63 @@ public class DecoderBlockEntity extends BlockEntity {
         ticksUntilReset = SIGNAL_DURATION;
 
         if (world instanceof ServerWorld serverWorld) {
-            serverWorld.updateNeighbors(pos, getCachedState().getBlock());
+            // Update neighbors and trigger block updates like redstone does
+            updateNeighborsAndTriggerUpdates(serverWorld, oldPowers);
         }
     }
 
     private void resetOutputs(ServerWorld world) {
-        boolean hadAny = outputPowers.values().stream().anyMatch(v -> v != null && v > 0);
+        // Store old powers before resetting
+        EnumMap<Direction, Integer> oldPowers = new EnumMap<>(Direction.class);
+        for (Direction d : Direction.values()) {
+            oldPowers.put(d, outputPowers.getOrDefault(d, 0));
+        }
+
+        boolean hadAnyPower = outputPowers.values().stream().anyMatch(v -> v != null && v > 0);
+
         for (Direction d : Direction.values()) {
             outputPowers.put(d, 0);
         }
         ticksUntilReset = 0;
 
-        if (hadAny) {
-            world.updateNeighbors(pos, getCachedState().getBlock());
+        if (hadAnyPower) {
+            // Update neighbors and trigger block updates when power is removed
+            updateNeighborsAndTriggerUpdates(world, oldPowers);
         }
+    }
+
+    /**
+     * Update neighbors and trigger block updates like redstone does
+     */
+    private void updateNeighborsAndTriggerUpdates(ServerWorld world, EnumMap<Direction, Integer> oldPowers) {
+        // First update the neighbors of this block
+        world.updateNeighbors(pos, getCachedState().getBlock());
+
+        // Then update each neighbor block that had power changes
+        for (Direction dir : Direction.values()) {
+            if (!dir.getAxis().isHorizontal()) continue; // Only horizontal outputs
+
+            int oldPower = oldPowers.getOrDefault(dir, 0);
+            int newPower = outputPowers.getOrDefault(dir, 0);
+
+            // If power level changed, update the neighbor in that direction
+            if (oldPower != newPower) {
+                BlockPos neighborPos = pos.offset(dir);
+                BlockState neighborState = world.getBlockState(neighborPos);
+
+                // Trigger neighbor update on the block receiving the signal
+                world.updateNeighbors(neighborPos, neighborState.getBlock());
+
+                // Also schedule a block event for immediate response (like pistons do)
+                world.scheduleBlockTick(neighborPos, neighborState.getBlock(), 0);
+
+                // Trigger comparator updates if needed
+                world.updateComparators(neighborPos, neighborState.getBlock());
+            }
+        }
+
+        // Mark block entity as dirty for save
+        markDirty();
     }
 
     public int getOutputPower(Direction direction) {

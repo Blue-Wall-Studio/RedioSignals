@@ -39,7 +39,7 @@ public class PacketVisualizer {
     }
 
     public void showPacketMovement(ServerWorld world, SignalPacket oldPacket, SignalPacket newPacket,
-            Set<UUID> debugPlayers) {
+                                   Set<UUID> debugPlayers) {
         BlockPos newPos = newPacket.getCurrentPos();
 
         for (UUID playerId : debugPlayers) {
@@ -77,6 +77,54 @@ public class PacketVisualizer {
                 player.sendMessage(Text.literal(String.format(
                         "§c[Packet Died] Pos: %s, Reason: %s",
                         pos.toShortString(), reason)), true);
+            }
+        }
+    }
+
+    public void showWirelessTransmission(ServerWorld world, SignalPacket packet, Set<UUID> debugPlayers) {
+        BlockPos pos = packet.getCurrentPos();
+
+        for (UUID playerId : debugPlayers) {
+            ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerId);
+            if (player != null && player.getWorld() == world) {
+                // Purple particles for wireless transmission
+                if (config.showParticles) {
+                    world.spawnParticles(
+                            new DustParticleEffect(0x9966FF, 1.0f),
+                            pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                            8, 0.3, 0.3, 0.3, 0.1);
+                }
+
+                // Display wireless transmission message
+                player.sendMessage(Text.literal(String.format(
+                        "§d[Transmitted wirelessly] Pos: %s, Strength: %s, Type: %s",
+                        pos.toShortString(),
+                        Arrays.toString(packet.getSignalStrengths()),
+                        packet.getSignalType())), true);
+            }
+        }
+    }
+
+    public void showWirelessReception(ServerWorld world, SignalPacket packet, Set<UUID> debugPlayers) {
+        BlockPos pos = packet.getCurrentPos();
+
+        for (UUID playerId : debugPlayers) {
+            ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerId);
+            if (player != null && player.getWorld() == world) {
+                // Cyan particles for wireless reception
+                if (config.showParticles) {
+                    world.spawnParticles(
+                            new DustParticleEffect(0x00FFFF, 1.0f),
+                            pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                            8, 0.3, 0.3, 0.3, 0.1);
+                }
+
+                // Display wireless reception message
+                player.sendMessage(Text.literal(String.format(
+                        "§b[Processed by wireless receiver] Pos: %s, Strength: %s, Type: %s",
+                        pos.toShortString(),
+                        Arrays.toString(packet.getSignalStrengths()),
+                        packet.getSignalType())), true);
             }
         }
     }

@@ -56,4 +56,16 @@ public class DebugManager {
             return;
         visualizer.showPacketDeath(world, packet, reason, debugPlayers);
     }
+
+    public void onWirelessTransmission(ServerWorld world, SignalPacket packet) {
+        if (debugPlayers.isEmpty())
+            return;
+        visualizer.showWirelessTransmission(world, packet, debugPlayers);
+    }
+
+    public void onWirelessReception(ServerWorld world, SignalPacket packet) {
+        if (debugPlayers.isEmpty())
+            return;
+        visualizer.showWirelessReception(world, packet, debugPlayers);
+    }
 }
