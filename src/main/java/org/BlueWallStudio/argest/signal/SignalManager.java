@@ -11,9 +11,9 @@ import net.minecraft.util.math.Direction;
 import org.BlueWallStudio.argest.debug.DebugManager;
 import org.BlueWallStudio.argest.config.ModConfig;
 import org.BlueWallStudio.argest.blocks.entity.DecoderBlockEntity;
+import org.BlueWallStudio.argest.wire.WireType;
 import org.BlueWallStudio.argest.wire.WireDetector;
 import org.BlueWallStudio.argest.wire.WireRegistry;
-import org.BlueWallStudio.argest.wire.WireType;
 import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiver;
 import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiverRegistry;
 import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitter;
@@ -151,7 +151,6 @@ public class SignalManager {
 
             iterator.remove();
         }
-        // Current packet is processed, kill it
         storage.getPackets().addAll(newPackets);
         storage.markDirty();
     }

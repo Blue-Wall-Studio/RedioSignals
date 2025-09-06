@@ -1,7 +1,6 @@
 package org.BlueWallStudio.argest;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.server.world.ServerWorld;
 import org.BlueWallStudio.argest.signal.SignalManager;
 import org.BlueWallStudio.argest.config.ModConfig;
 
@@ -10,13 +9,11 @@ public class WorldEventHandler {
     private static int INTERVAL = ModConfig.getInstance().signalProcessingDelay;
 
     public static void registerEvents() {
-        // Register server tick event for packet processing
-        ServerTickEvents.END_SERVER_TICK.register((server) -> {
+        // Register server world tick event to process packets every N ticks
+        ServerTickEvents.END_WORLD_TICK.register((world) -> {
             tickCounter++;
             if (tickCounter >= INTERVAL) {
-                for (ServerWorld world : server.getWorlds()) {
-                    SignalManager.tick(world);
-                }
+                SignalManager.tick(world);
                 tickCounter = 0;
             }
         });
