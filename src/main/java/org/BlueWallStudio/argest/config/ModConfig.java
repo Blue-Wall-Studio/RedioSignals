@@ -28,9 +28,9 @@ public class ModConfig {
 
     // Performance settings (in ticks)
     public int maxPacketLifetime = 100; // 5 seconds (assuming 20 TPS)
-    public int signalProcessingDelay = 2; // Every 2 ticks
+    public int packetProcessingDelay = 2; // Every 2 ticks
     public int maxPacketsPerTick = 100;
-    public int signalEncodingDelay = 2; // Every 2 ticks
+    public int packetEncodingDelay = 2; // Every 2 ticks
 
     private ModConfig() {
         // Private constructor for Singleton
@@ -88,9 +88,9 @@ public class ModConfig {
     private void validate() {
         // Config values correction and validation
         maxPacketLifetime = Math.max(-1, maxPacketLifetime);
-        signalProcessingDelay = Math.max(1, signalProcessingDelay);
+        packetProcessingDelay = Math.max(1, packetProcessingDelay);
         maxPacketsPerTick = Math.max(-1, maxPacketsPerTick);
-        signalEncodingDelay = Math.max(1, signalEncodingDelay);
+        packetEncodingDelay = Math.max(1, packetEncodingDelay);
     }
 
     public void reload() {

@@ -1,4 +1,4 @@
-package org.BlueWallStudio.argest.signal;
+package org.BlueWallStudio.argest.packet;
 
 import java.util.List;
 import java.util.Set;
@@ -19,23 +19,23 @@ import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiverRegistry;
 import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitter;
 import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitterRegistry;
 
-public class SignalManager {
+public class PacketManager {
     private static ModConfig config = ModConfig.getInstance();
 
-    private static final String KEY = "signal_manager";
-    private static final PersistentState.Type<SignalStorage> STORAGE_TYPE = new PersistentState.Type<>(
-            SignalStorage::new, SignalStorage::createFromNbt, null);
+    private static final String KEY = "packet_manager";
+    private static final PersistentState.Type<PacketStorage> STORAGE_TYPE = new PersistentState.Type<>(
+            PacketStorage::new, PacketStorage::createFromNbt, null);
 
-    private static SignalStorage getStorage(ServerWorld world) {
+    private static PacketStorage getStorage(ServerWorld world) {
         return world.getPersistentStateManager().getOrCreate(STORAGE_TYPE, KEY);
     }
 
-    public static boolean sendPacket(ServerWorld world, SignalPacket packet) {
+    public static boolean sendPacket(ServerWorld world, Packet packet) {
         if (!packet.isValid()) {
             return false;
         }
 
-        SignalStorage storage = getStorage(world);
+        PacketStorage storage = getStorage(world);
 
         // Limit number of active packets
         if (config.maxPacketsPerTick != -1 && getStorage(world).getPackets().size() >= config.maxPacketsPerTick) {
@@ -56,7 +56,7 @@ public class SignalManager {
     }
 
     private static void cleanupOldPackets(ServerWorld world) {
-        SignalStorage storage = getStorage(world);
+        PacketStorage storage = getStorage(world);
         if (config.maxPacketLifetime != -1) {
             if (storage.getPackets()
                     .removeIf(packet -> packet.getAge(getCurrentServerTick(world)) > config.maxPacketLifetime)) {
@@ -66,13 +66,13 @@ public class SignalManager {
     }
 
     private static void processActivePackets(ServerWorld world) {
-        SignalStorage storage = getStorage(world);
-        Set<SignalPacket> packets = storage.getPackets();
-        Set<SignalPacket> newPackets = new HashSet<>();
+        PacketStorage storage = getStorage(world);
+        Set<Packet> packets = storage.getPackets();
+        Set<Packet> newPackets = new HashSet<>();
 
         var iterator = packets.iterator();
         while (iterator.hasNext()) {
-            SignalPacket packet = iterator.next();
+            Packet packet = iterator.next();
 
             BlockPos currentPos = packet.getCurrentPos();
             Direction currentDir = packet.getCurrentDirection();
@@ -87,7 +87,7 @@ public class SignalManager {
             }
 
             if (WireDetector.isWirelessReceiver(world, currentPos)) {
-                SignalPacket processedPacket = handleWirelessReception(world, packet, currentPos, currentDir);
+                Packet processedPacket = handleWirelessReception(world, packet, currentPos, currentDir);
 
                 if (processedPacket != null) {
                     newPackets.add(processedPacket);
@@ -100,7 +100,7 @@ public class SignalManager {
             }
 
             if (WireDetector.isWirelessTransmitter(world, currentPos)) {
-                SignalPacket transmittedPacket = handleWirelessTransmission(world, packet, currentPos, currentDir);
+                Packet transmittedPacket = handleWirelessTransmission(world, packet, currentPos, currentDir);
 
                 if (transmittedPacket != null) {
                     DebugManager.getInstance().onPacketDied(world, packet, "Transmitted wirelessly");
@@ -143,7 +143,7 @@ public class SignalManager {
                 BlockPos nextPos = currentPos.offset(exit);
 
                 if (WireDetector.canTransmit(world, currentPos, nextPos, exit)) {
-                    SignalPacket newPacket = packet.withNewPosition(nextPos, exit);
+                    Packet newPacket = packet.withNewPosition(nextPos, exit);
                     newPackets.add(newPacket);
                     DebugManager.getInstance().onPacketMoved(world, packet, newPacket);
                 }
@@ -162,21 +162,21 @@ public class SignalManager {
         return world.getServer().getTicks();
     }
 
-    private static void handleDecoderReception(ServerWorld world, SignalPacket packet, BlockPos pos,
+    private static void handleDecoderReception(ServerWorld world, Packet packet, BlockPos pos,
             Direction entryDirection) {
         if (world.getBlockEntity(pos) instanceof DecoderBlockEntity decoder) {
             decoder.receivePacket(packet, entryDirection);
         }
     }
 
-    private static SignalPacket handleWirelessReception(ServerWorld world, SignalPacket packet, BlockPos pos,
+    private static Packet handleWirelessReception(ServerWorld world, Packet packet, BlockPos pos,
             Direction entryDirection) {
         Optional<WirelessReceiver> receiver = WirelessReceiverRegistry.getReceiver(world.getBlockState(pos));
 
         return receiver.get().processWirelessReception(world, pos, packet, entryDirection);
     }
 
-    private static SignalPacket handleWirelessTransmission(ServerWorld world, SignalPacket packet, BlockPos pos,
+    private static Packet handleWirelessTransmission(ServerWorld world, Packet packet, BlockPos pos,
             Direction entryDirection) {
         Optional<WirelessTransmitter> transmitter = WirelessTransmitterRegistry
                 .getTransmitter(world.getBlockState(pos));

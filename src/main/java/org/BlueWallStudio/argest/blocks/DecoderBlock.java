@@ -81,7 +81,7 @@ public class DecoderBlock extends BlockWithEntity {
 
     @Override
     public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-        // Same as for weak signal
+        // Same as for weak packet
         if (!direction.getAxis().isHorizontal())
             return 0;
 

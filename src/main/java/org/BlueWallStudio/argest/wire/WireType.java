@@ -3,7 +3,7 @@ package org.BlueWallStudio.argest.wire;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.BlueWallStudio.argest.signal.SignalPacket;
+import org.BlueWallStudio.argest.packet.Packet;
 
 public interface WireType {
     /**
@@ -16,7 +16,7 @@ public interface WireType {
      * 
      * @return true if paket can go further, false if it stops
      */
-    boolean processPacket(World world, BlockPos pos, SignalPacket packet);
+    boolean processPacket(World world, BlockPos pos, Packet packet);
 
     /**
      * Get processing priority (more = higher priority)
@@ -37,6 +37,6 @@ public interface WireType {
      * Get possible exit directions for the packet
      */
     java.util.List<net.minecraft.util.math.Direction> getExitDirections(
-            World world, BlockPos pos, SignalPacket packet,
+            World world, BlockPos pos, Packet packet,
             net.minecraft.util.math.Direction entryDirection);
 }

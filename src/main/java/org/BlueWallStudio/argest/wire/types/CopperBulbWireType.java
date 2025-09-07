@@ -4,7 +4,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.BlueWallStudio.argest.signal.SignalPacket;
+import org.BlueWallStudio.argest.packet.Packet;
 
 import java.util.*;
 
@@ -20,7 +20,7 @@ public class CopperBulbWireType extends CopperWireType {
     }
 
     @Override
-    public boolean processPacket(World world, BlockPos pos, SignalPacket packet) {
+    public boolean processPacket(World world, BlockPos pos, Packet packet) {
         BlockState currentState = world.getBlockState(pos);
 
         // Check if lamp is powered by external redstone

@@ -6,7 +6,7 @@ import java.util.UUID;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.server.world.ServerWorld;
-import org.BlueWallStudio.argest.signal.SignalPacket;
+import org.BlueWallStudio.argest.packet.Packet;
 
 public class DebugManager {
     private static DebugManager instance;
@@ -39,31 +39,31 @@ public class DebugManager {
         return debugPlayers.contains(playerId);
     }
 
-    public void onPacketCreated(ServerWorld world, SignalPacket packet) {
+    public void onPacketCreated(ServerWorld world, Packet packet) {
         if (debugPlayers.isEmpty())
             return;
         visualizer.showPacketCreation(world, packet, debugPlayers);
     }
 
-    public void onPacketMoved(ServerWorld world, SignalPacket oldPacket, SignalPacket newPacket) {
+    public void onPacketMoved(ServerWorld world, Packet oldPacket, Packet newPacket) {
         if (debugPlayers.isEmpty())
             return;
         visualizer.showPacketMovement(world, oldPacket, newPacket, debugPlayers);
     }
 
-    public void onPacketDied(ServerWorld world, SignalPacket packet, String reason) {
+    public void onPacketDied(ServerWorld world, Packet packet, String reason) {
         if (debugPlayers.isEmpty())
             return;
         visualizer.showPacketDeath(world, packet, reason, debugPlayers);
     }
 
-    public void onWirelessTransmission(ServerWorld world, SignalPacket packet) {
+    public void onWirelessTransmission(ServerWorld world, Packet packet) {
         if (debugPlayers.isEmpty())
             return;
         visualizer.showWirelessTransmission(world, packet, debugPlayers);
     }
 
-    public void onWirelessReception(ServerWorld world, SignalPacket packet) {
+    public void onWirelessReception(ServerWorld world, Packet packet) {
         if (debugPlayers.isEmpty())
             return;
         visualizer.showWirelessReception(world, packet, debugPlayers);

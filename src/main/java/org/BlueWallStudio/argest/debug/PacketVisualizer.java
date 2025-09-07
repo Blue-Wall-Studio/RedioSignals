@@ -7,13 +7,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import java.util.*;
-import org.BlueWallStudio.argest.signal.SignalPacket;
+import org.BlueWallStudio.argest.packet.Packet;
 import org.BlueWallStudio.argest.config.ModConfig;
 
 public class PacketVisualizer {
     private static ModConfig config = ModConfig.getInstance();
 
-    public void showPacketCreation(ServerWorld world, SignalPacket packet, Set<UUID> debugPlayers) {
+    public void showPacketCreation(ServerWorld world, Packet packet, Set<UUID> debugPlayers) {
         BlockPos pos = packet.getCurrentPos();
 
         // Show wind particles (or other matching ones)
@@ -32,14 +32,14 @@ public class PacketVisualizer {
                 player.sendMessage(Text.literal(String.format(
                         "§a[Packet Created] Pos: %s, Strength: %s, Type: %s",
                         pos.toShortString(),
-                        Arrays.toString(packet.getSignalStrengths()),
-                        packet.getSignalType())), true);
+                        Arrays.toString(packet.getPacketStrengths()),
+                        packet.getPacketType())), true);
             }
         }
     }
 
-    public void showPacketMovement(ServerWorld world, SignalPacket oldPacket, SignalPacket newPacket,
-                                   Set<UUID> debugPlayers) {
+    public void showPacketMovement(ServerWorld world, Packet oldPacket, Packet newPacket,
+            Set<UUID> debugPlayers) {
         BlockPos newPos = newPacket.getCurrentPos();
 
         for (UUID playerId : debugPlayers) {
@@ -59,7 +59,7 @@ public class PacketVisualizer {
         }
     }
 
-    public void showPacketDeath(ServerWorld world, SignalPacket packet, String reason, Set<UUID> debugPlayers) {
+    public void showPacketDeath(ServerWorld world, Packet packet, String reason, Set<UUID> debugPlayers) {
         BlockPos pos = packet.getCurrentPos();
 
         for (UUID playerId : debugPlayers) {
@@ -81,7 +81,7 @@ public class PacketVisualizer {
         }
     }
 
-    public void showWirelessTransmission(ServerWorld world, SignalPacket packet, Set<UUID> debugPlayers) {
+    public void showWirelessTransmission(ServerWorld world, Packet packet, Set<UUID> debugPlayers) {
         BlockPos pos = packet.getCurrentPos();
 
         for (UUID playerId : debugPlayers) {
@@ -99,13 +99,13 @@ public class PacketVisualizer {
                 player.sendMessage(Text.literal(String.format(
                         "§d[Transmitted wirelessly] Pos: %s, Strength: %s, Type: %s",
                         pos.toShortString(),
-                        Arrays.toString(packet.getSignalStrengths()),
-                        packet.getSignalType())), true);
+                        Arrays.toString(packet.getPacketStrengths()),
+                        packet.getPacketType())), true);
             }
         }
     }
 
-    public void showWirelessReception(ServerWorld world, SignalPacket packet, Set<UUID> debugPlayers) {
+    public void showWirelessReception(ServerWorld world, Packet packet, Set<UUID> debugPlayers) {
         BlockPos pos = packet.getCurrentPos();
 
         for (UUID playerId : debugPlayers) {
@@ -123,8 +123,8 @@ public class PacketVisualizer {
                 player.sendMessage(Text.literal(String.format(
                         "§b[Processed by wireless receiver] Pos: %s, Strength: %s, Type: %s",
                         pos.toShortString(),
-                        Arrays.toString(packet.getSignalStrengths()),
-                        packet.getSignalType())), true);
+                        Arrays.toString(packet.getPacketStrengths()),
+                        packet.getPacketType())), true);
             }
         }
     }

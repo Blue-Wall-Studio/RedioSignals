@@ -3,21 +3,21 @@ package org.BlueWallStudio.argest.wireless.receiver;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import org.BlueWallStudio.argest.signal.SignalPacket;
+import org.BlueWallStudio.argest.packet.Packet;
 
-// interface for blocks that can receive wireless signals
+// interface for blocks that can receive wireless packets
 public interface WirelessReceiver {
     /**
-     * Check, if block can receive wireless signals
+     * Check, if block can receive wireless packets
      */
-    boolean canReceiveWireless(World world, BlockPos pos, SignalPacket packet);
+    boolean canReceiveWireless(World world, BlockPos pos, Packet packet);
 
     /**
      * Processes wireless packet reception
      * 
      * @return modified package or null if packet must be destroyed
      */
-    SignalPacket processWirelessReception(World world, BlockPos pos, SignalPacket packet, Direction from);
+    Packet processWirelessReception(World world, BlockPos pos, Packet packet, Direction from);
 
     /**
      * Receiver priority (more = higher priority)

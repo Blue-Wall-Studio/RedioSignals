@@ -10,14 +10,14 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import org.BlueWallStudio.argest.blocks.DecoderBlock;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
-import org.BlueWallStudio.argest.signal.SignalPacket;
+import org.BlueWallStudio.argest.packet.Packet;
 
 import java.util.EnumMap;
 
 public class DecoderBlockEntity extends BlockEntity {
     private final EnumMap<Direction, Integer> outputPowers = new EnumMap<>(Direction.class);
 
-    private static final int SIGNAL_DURATION = 10; // Changed from 20 to 2 ticks
+    private static final int packet_DURATION = 10; // Changed from 20 to 2 ticks
     private int ticksUntilReset = 0;
 
     public DecoderBlockEntity(BlockPos pos, BlockState state) {
@@ -41,15 +41,15 @@ public class DecoderBlockEntity extends BlockEntity {
 
     /**
      * getting packet from encoder
-     * signal strengths are distributed relative to the block's direction (FACING
+     * packet strengths are distributed relative to the block's direction (FACING
      * property):
      * [left, front, right]
      */
-    public void receivePacket(SignalPacket packet, Direction entryDirection) {
+    public void receivePacket(Packet packet, Direction entryDirection) {
         if (world == null || world.isClient)
             return;
 
-        int[] strengths = packet.getSignalStrengths();
+        int[] strengths = packet.getPacketStrengths();
         if (strengths == null || strengths.length < 3)
             return;
 
@@ -73,7 +73,7 @@ public class DecoderBlockEntity extends BlockEntity {
         outputPowers.put(facing, strengths[1]);
         outputPowers.put(right, strengths[2]);
 
-        ticksUntilReset = SIGNAL_DURATION;
+        ticksUntilReset = packet_DURATION;
 
         if (world instanceof ServerWorld serverWorld) {
             // Update neighbors and trigger block updates like redstone does
@@ -110,7 +110,8 @@ public class DecoderBlockEntity extends BlockEntity {
 
         // Then update each neighbor block that had power changes
         for (Direction dir : Direction.values()) {
-            if (!dir.getAxis().isHorizontal()) continue; // Only horizontal outputs
+            if (!dir.getAxis().isHorizontal())
+                continue; // Only horizontal outputs
 
             int oldPower = oldPowers.getOrDefault(dir, 0);
             int newPower = outputPowers.getOrDefault(dir, 0);
@@ -120,7 +121,7 @@ public class DecoderBlockEntity extends BlockEntity {
                 BlockPos neighborPos = pos.offset(dir);
                 BlockState neighborState = world.getBlockState(neighborPos);
 
-                // Trigger neighbor update on the block receiving the signal
+                // Trigger neighbor update on the block receiving the packet
                 world.updateNeighbors(neighborPos, neighborState.getBlock());
 
                 // Also schedule a block event for immediate response (like pistons do)

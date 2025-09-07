@@ -1,4 +1,4 @@
-package org.BlueWallStudio.argest.signal;
+package org.BlueWallStudio.argest.packet;
 
 import java.util.Set;
 import java.util.HashSet;
@@ -8,14 +8,14 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtElement;
 
-public class SignalStorage extends PersistentState {
-    private final Set<SignalPacket> packets = new HashSet<>();
+public class PacketStorage extends PersistentState {
+    private final Set<Packet> packets = new HashSet<>();
 
-    public static SignalStorage createFromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
-        SignalStorage storage = new SignalStorage();
+    public static PacketStorage createFromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
+        PacketStorage storage = new PacketStorage();
         NbtList list = nbt.getList("packets", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < list.size(); i++) {
-            storage.packets.add(SignalPacket.fromNbt(list.getCompound(i)));
+            storage.packets.add(Packet.fromNbt(list.getCompound(i)));
         }
         return storage;
     }
@@ -23,14 +23,14 @@ public class SignalStorage extends PersistentState {
     @Override
     public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         NbtList list = new NbtList();
-        for (SignalPacket packet : packets) {
+        for (Packet packet : packets) {
             list.add(packet.toNbt());
         }
         nbt.put("packets", list);
         return nbt;
     }
 
-    public Set<SignalPacket> getPackets() {
+    public Set<Packet> getPackets() {
         return packets;
     }
 }

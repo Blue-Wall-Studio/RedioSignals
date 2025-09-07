@@ -4,22 +4,22 @@ import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import org.BlueWallStudio.argest.signal.SignalPacket;
-import org.BlueWallStudio.argest.signal.SignalType;
+import org.BlueWallStudio.argest.packet.Packet;
+import org.BlueWallStudio.argest.packet.PacketType;
 import org.BlueWallStudio.argest.wire.WireDetector;
 
 // Receiver implementation for copper grate
 public class CopperGrateReceiver implements WirelessReceiver {
 
     @Override
-    public boolean canReceiveWireless(World world, BlockPos pos, SignalPacket packet) {
+    public boolean canReceiveWireless(World world, BlockPos pos, Packet packet) {
         return world.getBlockState(pos).isOf(Blocks.COPPER_GRATE);
     }
 
     @Override
-    public SignalPacket processWirelessReception(World world, BlockPos pos, SignalPacket packet, Direction from) {
+    public Packet processWirelessReception(World world, BlockPos pos, Packet packet, Direction from) {
         // Make paket descending
-        int[] strengths = packet.getSignalStrengths();
+        int[] strengths = packet.getPacketStrengths();
         int creationTick = packet.getCreationTick();
 
         // Preferrably go into same direction that package came from
@@ -27,7 +27,7 @@ public class CopperGrateReceiver implements WirelessReceiver {
         if (preferred != null) {
             BlockPos forward = pos.offset(preferred);
             if (WireDetector.isWire(world, forward) || WireDetector.isDecoder(world, forward)) {
-                return new SignalPacket(strengths, SignalType.DESCENDING, forward, preferred, creationTick);
+                return new Packet(strengths, PacketType.DESCENDING, forward, preferred, creationTick);
             }
         }
 
@@ -36,7 +36,7 @@ public class CopperGrateReceiver implements WirelessReceiver {
         for (Direction d : Direction.values()) {
             BlockPos np = pos.offset(d);
             if (WireDetector.isWire(world, np) || WireDetector.isDecoder(world, np)) {
-                return new SignalPacket(strengths, SignalType.DESCENDING, np, d, creationTick);
+                return new Packet(strengths, PacketType.DESCENDING, np, d, creationTick);
             }
         }
 

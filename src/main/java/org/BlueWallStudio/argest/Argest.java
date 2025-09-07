@@ -11,7 +11,7 @@ import org.BlueWallStudio.argest.debug.DebugCommand;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
 import org.BlueWallStudio.argest.config.ModConfig;
 import org.BlueWallStudio.argest.network.NetworkHandler;
-import org.BlueWallStudio.argest.signal.SignalManager;
+import org.BlueWallStudio.argest.packet.PacketManager;
 import org.BlueWallStudio.argest.wire.WireRegistry;
 import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiverRegistry;
 import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitterRegistry;
@@ -21,7 +21,7 @@ public class Argest implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     private static int tickCounter = 0;
-    private static int INTERVAL = ModConfig.getInstance().signalProcessingDelay;
+    private static int INTERVAL = ModConfig.getInstance().packetProcessingDelay;
 
     @Override
     public void onInitialize() {
@@ -47,7 +47,7 @@ public class Argest implements ModInitializer {
             tickCounter++;
             if (tickCounter >= INTERVAL) {
                 for (ServerWorld world : server.getWorlds()) {
-                    SignalManager.tick(world);
+                    PacketManager.tick(world);
                 }
                 tickCounter = 0;
             }

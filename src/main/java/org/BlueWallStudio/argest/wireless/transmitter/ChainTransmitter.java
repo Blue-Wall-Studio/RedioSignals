@@ -9,7 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.state.property.Properties;
-import org.BlueWallStudio.argest.signal.SignalPacket;
+import org.BlueWallStudio.argest.packet.Packet;
 import org.BlueWallStudio.argest.wire.WireDetector;
 import org.BlueWallStudio.argest.wireless.WirelessTransmissionConfig;
 
@@ -17,7 +17,7 @@ import org.BlueWallStudio.argest.wireless.WirelessTransmissionConfig;
 public class ChainTransmitter implements WirelessTransmitter {
 
     @Override
-    public boolean canTransmit(World world, BlockPos pos, SignalPacket packet) {
+    public boolean canTransmit(World world, BlockPos pos, Packet packet) {
         BlockState state = world.getBlockState(pos);
 
         // Check if is chain
@@ -31,7 +31,7 @@ public class ChainTransmitter implements WirelessTransmitter {
     }
 
     @Override
-    public SignalPacket processWirelessTransmission(World world, BlockPos pos, SignalPacket packet,
+    public Packet processWirelessTransmission(World world, BlockPos pos, Packet packet,
             Direction entryDirection) {
 
         if (!this.canTransmit(world, pos, packet)) {
@@ -50,7 +50,7 @@ public class ChainTransmitter implements WirelessTransmitter {
         }
 
         // Create new packet in target position
-        SignalPacket newPacket = packet.withNewPosition(targetPos, config.transmissionDirection());
+        Packet newPacket = packet.withNewPosition(targetPos, config.transmissionDirection());
 
         if (newPacket == null) {
             return null;
@@ -61,7 +61,7 @@ public class ChainTransmitter implements WirelessTransmitter {
 
     // Helper function for processWirelessTransmission
     private BlockPos findWirelessTarget(World world, BlockPos startPos, WirelessTransmissionConfig config,
-            SignalPacket packet) {
+            Packet packet) {
         Direction dir = config.transmissionDirection();
         int maxRange = config.maxRange();
         boolean canPenetrate = config.canPenetrate();
@@ -130,7 +130,7 @@ public class ChainTransmitter implements WirelessTransmitter {
     }
 
     @Override
-    public WirelessTransmissionConfig getTransmissionConfig(World world, BlockPos pos, SignalPacket packet,
+    public WirelessTransmissionConfig getTransmissionConfig(World world, BlockPos pos, Packet packet,
             Direction entryDirection) {
         // Optionally can match entryDirection.getAxis() with chain axis, if want an
         // additional checks

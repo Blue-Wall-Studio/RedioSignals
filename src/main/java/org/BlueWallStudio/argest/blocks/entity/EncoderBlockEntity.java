@@ -10,9 +10,9 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import org.BlueWallStudio.argest.blocks.EncoderBlock;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
-import org.BlueWallStudio.argest.signal.SignalManager;
-import org.BlueWallStudio.argest.signal.SignalPacket;
-import org.BlueWallStudio.argest.signal.SignalType;
+import org.BlueWallStudio.argest.packet.PacketManager;
+import org.BlueWallStudio.argest.packet.Packet;
+import org.BlueWallStudio.argest.packet.PacketType;
 import org.BlueWallStudio.argest.wire.WireDetector;
 
 import java.util.EnumMap;
@@ -60,7 +60,7 @@ public class EncoderBlockEntity extends BlockEntity {
         // Process inputs + try to transmit every INPUT_PROCESS_INTERVAL ticks
         if (entity.tickCounter % INPUT_PROCESS_INTERVAL == 0) {
             entity.updateInputs((ServerWorld) world);
-            entity.tryTransmitSignal((ServerWorld) world);
+            entity.tryTransmitPacket((ServerWorld) world);
         }
     }
 
@@ -113,9 +113,9 @@ public class EncoderBlockEntity extends BlockEntity {
     }
 
     /**
-     * Determine activation and send signals to all outputs.
+     * Determine activation and send packets to all outputs.
      */
-    private void tryTransmitSignal(ServerWorld world) {
+    private void tryTransmitPacket(ServerWorld world) {
         if (outputDirections.isEmpty())
             return;
 
@@ -133,14 +133,14 @@ public class EncoderBlockEntity extends BlockEntity {
         if (strengths[0] == 0 && strengths[1] == 0 && strengths[2] == 0)
             return;
 
-        // Currently simplified: always ascending signal
-        SignalType signalType = SignalType.ASCENDING;
+        // Currently simplified: always ascending packet
+        PacketType packetType = PacketType.ASCENDING;
 
         // Send packet to each output direction
         for (Direction outputDir : outputDirections) {
             BlockPos outputPos = pos.offset(outputDir);
-            SignalPacket packet = new SignalPacket(strengths, signalType, outputPos, outputDir, world);
-            SignalManager.sendPacket(world, packet);
+            Packet packet = new Packet(strengths, packetType, outputPos, outputDir, world);
+            PacketManager.sendPacket(world, packet);
         }
     }
 

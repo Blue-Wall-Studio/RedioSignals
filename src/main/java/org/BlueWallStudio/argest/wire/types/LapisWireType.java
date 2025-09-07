@@ -5,8 +5,8 @@ import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import org.BlueWallStudio.argest.signal.SignalPacket;
-import org.BlueWallStudio.argest.signal.SignalType;
+import org.BlueWallStudio.argest.packet.Packet;
+import org.BlueWallStudio.argest.packet.PacketType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +23,7 @@ public class LapisWireType extends AbstractWireType {
     }
 
     @Override
-    public boolean processPacket(World world, BlockPos pos, SignalPacket packet) {
+    public boolean processPacket(World world, BlockPos pos, Packet packet) {
         return true; // Continue transfer
     }
 
@@ -44,15 +44,15 @@ public class LapisWireType extends AbstractWireType {
 
     @Override
     public List<Direction> getExitDirections(World world, BlockPos pos,
-            SignalPacket packet, Direction entryDirection) {
+            Packet packet, Direction entryDirection) {
         List<Direction> exits = new ArrayList<>();
-        SignalType signalType = packet.getSignalType();
+        PacketType packetType = packet.getPacketType();
 
         // Copy and sort local directions array by priority
         Direction[] directions = Direction.values();
         Arrays.sort(directions, (a, b) -> Integer.compare(
-                getDirectionPriority(b, signalType, entryDirection),
-                getDirectionPriority(a, signalType, entryDirection)));
+                getDirectionPriority(b, packetType, entryDirection),
+                getDirectionPriority(a, packetType, entryDirection)));
 
         Direction entryOpposite = (entryDirection == null) ? null : entryDirection.getOpposite();
 
@@ -62,7 +62,7 @@ public class LapisWireType extends AbstractWireType {
                 continue;
 
             // Save physical restrictions for packet types
-            if (!canPacketGoInDirection(signalType, dir))
+            if (!canPacketGoInDirection(packetType, dir))
                 continue;
 
             if (hasValidTargetAt(world, pos.offset(dir))) {
@@ -73,20 +73,20 @@ public class LapisWireType extends AbstractWireType {
         return exits;
     }
 
-    private boolean canPacketGoInDirection(SignalType signalType, Direction dir) {
-        return switch (signalType) {
+    private boolean canPacketGoInDirection(PacketType packetType, Direction dir) {
+        return switch (packetType) {
             case ASCENDING -> dir != Direction.DOWN; // ASCENDING cannot go downwards
             case DESCENDING -> dir != Direction.UP; // DESCENDING cannot go upwards
         };
     }
 
-    private int getDirectionPriority(Direction dir, SignalType signalType, Direction entry) {
+    private int getDirectionPriority(Direction dir, PacketType packetType, Direction entry) {
         // Don't go back
         if (entry != null && dir == entry.getOpposite()) {
             return -1;
         }
 
-        return switch (signalType) {
+        return switch (packetType) {
             case ASCENDING -> {
                 if (dir == Direction.UP)
                     yield 100;
