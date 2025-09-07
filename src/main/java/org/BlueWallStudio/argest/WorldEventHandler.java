@@ -1,8 +1,9 @@
 package org.BlueWallStudio.argest;
 
+import net.minecraft.server.world.ServerWorld;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import org.BlueWallStudio.argest.packet.PacketManager;
 import org.BlueWallStudio.argest.config.ModConfig;
+import org.BlueWallStudio.argest.packet.PacketManager;
 
 public class WorldEventHandler {
     private static int tickCounter = 0;
@@ -10,10 +11,12 @@ public class WorldEventHandler {
 
     public static void registerEvents() {
         // Register server world tick event to process packets every N ticks
-        ServerTickEvents.END_WORLD_TICK.register((world) -> {
+        ServerTickEvents.END_SERVER_TICK.register((server) -> {
             tickCounter++;
             if (tickCounter >= INTERVAL) {
-                PacketManager.tick(world);
+                for (ServerWorld world : server.getWorlds()) {
+                    PacketManager.tick(world);
+                }
                 tickCounter = 0;
             }
         });
