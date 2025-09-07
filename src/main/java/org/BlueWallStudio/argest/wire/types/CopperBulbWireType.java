@@ -6,8 +6,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.BlueWallStudio.argest.packet.Packet;
 
-import java.util.*;
-
 /**
  * Bulb on copper wire. Re-uses copper logic. Changes LIT state at each package
  * receive, if NOT powered by redstone

@@ -17,9 +17,9 @@ public class Packet {
     private final int totalStrength;
 
     public Packet(int[] strengths, PacketType type, BlockPos pos, Direction dir, int creationTick) {
-        this.packetStrengths = strengths.clone();
+        this.packetStrengths = strengths;
         this.packetType = type;
-        this.currentPos = pos.toImmutable();
+        this.currentPos = pos;
         this.currentDirection = dir;
         this.creationTick = creationTick;
         this.totalStrength = calculateTotalStrength(strengths);

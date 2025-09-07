@@ -49,7 +49,7 @@ public class ChainTransmitter implements WirelessTransmitter {
             return null;
         }
 
-        // Create new packet in target position
+        // Queue packet creation in target position
         Packet newPacket = packet.withNewPosition(targetPos, config.transmissionDirection());
 
         if (newPacket == null) {
