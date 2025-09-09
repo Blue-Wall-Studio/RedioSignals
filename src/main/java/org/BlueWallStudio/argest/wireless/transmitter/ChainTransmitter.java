@@ -9,6 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.state.property.Properties;
+import org.BlueWallStudio.argest.ModTags;
 import org.BlueWallStudio.argest.packet.Packet;
 import org.BlueWallStudio.argest.wire.WireDetector;
 import org.BlueWallStudio.argest.wireless.WirelessTransmissionConfig;
@@ -21,7 +22,7 @@ public class ChainTransmitter implements WirelessTransmitter {
         BlockState state = world.getBlockState(pos);
 
         // Check if is chain
-        if (!state.isOf(Blocks.CHAIN)) {
+        if (!state.isIn(ModTags.IRON_TRANSMITTERS)) {
             return false;
         }
 
@@ -61,7 +62,7 @@ public class ChainTransmitter implements WirelessTransmitter {
 
     // Helper function for processWirelessTransmission
     private BlockPos findWirelessTarget(World world, BlockPos startPos, WirelessTransmissionConfig config,
-            Packet packet) {
+            Packet ignoredPacket) {
         Direction dir = config.transmissionDirection();
         int maxRange = config.maxRange();
         boolean canPenetrate = config.canPenetrate();
@@ -77,19 +78,19 @@ public class ChainTransmitter implements WirelessTransmitter {
             }
 
             if (!canPenetrate && !checkState.isAir() &&
-                    !WireDetector.isWirelessReceiver(world, checkPos)) {
+                    !checkState.isIn(ModTags.WIRELESS_RECEIVERS)) {
                 break;
             }
 
             if (config.requireReceiver()) {
-                if (WireDetector.isWirelessReceiver(world, checkPos)) {
+                if (checkState.isIn(ModTags.WIRELESS_RECEIVERS)) {
                     return checkPos;
                 } else {
                     continue;
                 }
             }
 
-            if (WireDetector.isWirelessReceiver(world, checkPos) || WireDetector.isWire(world, checkPos)) {
+            if (checkState.isIn(ModTags.WIRELESS_RECEIVERS) || checkState.isIn(ModTags.ALL_WIRES)) {
                 return checkPos;
             }
         }

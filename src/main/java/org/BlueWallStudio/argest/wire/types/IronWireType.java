@@ -8,51 +8,50 @@ import org.BlueWallStudio.argest.ModTags;
 import org.BlueWallStudio.argest.packet.Packet;
 import org.BlueWallStudio.argest.packet.PacketType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Copper wire - basic routing implementation
+ * Counter-clockwise wire - same as copper but rotates counter-clockwise
  */
-public class CopperWireType extends AbstractWireType {
-
+public class IronWireType extends AbstractWireType {
     @Override
-    public boolean canHandle(BlockState blockState) {
-        return blockState.isIn(ModTags.COPPER_WIRES);
+    public boolean canHandle(BlockState blockState){
+        return blockState.isIn(ModTags.IRON_WIRES);
     }
 
     @Override
-    public boolean processPacket(World world, BlockPos pos, Packet packet) {
-        // Copper transmits packages without side effects
+    public boolean processPacket(World world, BlockPos pos, Packet packet){
         return true;
     }
 
     @Override
-    public int getPriority() {
+    public int getPriority(){
         return 100;
     }
 
     @Override
     public List<Direction> getExitDirections(World world, BlockPos pos,
-            Packet packet, Direction entryDirection) {
+                                             Packet packet, Direction entryDirection) {
         List<Direction> exits = new ArrayList<>();
         PacketType packetType = packet.getPacketType();
 
         if (packetType == PacketType.ASCENDING) {
-            // ASCENDING priority
             if (hasValidTargetAt(world, pos.up())) {
                 exits.add(Direction.UP);
             } else {
-                addHorizontalDirections(world, pos, exits, entryDirection, dir -> true, true);
+                // Use counter-clockwise method from AbstractWireType
+                addHorizontalDirectionsCounterClockwise(world, pos, exits, entryDirection, dir -> true, true);
             }
         } else if (packetType == PacketType.DESCENDING) {
-            // DESCENDING priority
             if (hasValidTargetAt(world, pos.down())) {
                 exits.add(Direction.DOWN);
             } else {
-                addHorizontalDirections(world, pos, exits, entryDirection, dir -> true, true);
+                addHorizontalDirectionsCounterClockwise(world, pos, exits, entryDirection, dir -> true, true);
             }
         } else {
-            // Common packet - all directions (including vertical)
+            // For common packets use addAllDirections
+            // (it uses standard Direction.values() order, but addAllDirectionsCounterClockwise could be created too)
             addAllDirections(world, pos, exits, entryDirection, dir -> true, true);
         }
 

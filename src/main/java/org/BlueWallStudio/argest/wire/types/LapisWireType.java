@@ -1,10 +1,10 @@
 package org.BlueWallStudio.argest.wire.types;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.BlueWallStudio.argest.ModTags;
 import org.BlueWallStudio.argest.packet.Packet;
 import org.BlueWallStudio.argest.packet.PacketType;
 
@@ -19,7 +19,7 @@ public class LapisWireType extends AbstractWireType {
 
     @Override
     public boolean canHandle(BlockState blockState) {
-        return blockState.isOf(Blocks.LAPIS_BLOCK);
+        return blockState.isIn(ModTags.LAPIS_WIRES);
     }
 
     @Override

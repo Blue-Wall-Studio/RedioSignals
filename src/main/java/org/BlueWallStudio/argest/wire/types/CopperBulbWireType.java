@@ -4,6 +4,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.BlueWallStudio.argest.ModTags;
 import org.BlueWallStudio.argest.packet.Packet;
 
 /**
@@ -14,7 +15,7 @@ public class CopperBulbWireType extends CopperWireType {
 
     @Override
     public boolean canHandle(BlockState blockState) {
-        return blockState.isOf(Blocks.COPPER_BULB);
+        return blockState.isIn(ModTags.COPPER_BULB_WIRES);
     }
 
     @Override

@@ -14,6 +14,8 @@ public class WireRegistry {
         register(new GoldWireType());
         register(new CopperBulbWireType());
         register(new LapisWireType());
+        register(new IronWireType());
+        register(new QuartzWireType());
     }
 
     public static void register(WireType wireType) {

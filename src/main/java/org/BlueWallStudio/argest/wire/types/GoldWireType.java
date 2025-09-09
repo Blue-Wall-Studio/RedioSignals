@@ -1,10 +1,10 @@
 package org.BlueWallStudio.argest.wire.types;
 
-import net.minecraft.block.Blocks;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.BlueWallStudio.argest.ModTags;
 import org.BlueWallStudio.argest.packet.Packet;
 import org.BlueWallStudio.argest.packet.PacketType;
 
@@ -18,7 +18,7 @@ public class GoldWireType extends AbstractWireType {
 
     @Override
     public boolean canHandle(BlockState blockState) {
-        return blockState.isOf(Blocks.GOLD_BLOCK);
+        return blockState.isIn(ModTags.GOLD_WIRES);
     }
 
     @Override
@@ -45,24 +45,26 @@ public class GoldWireType extends AbstractWireType {
                 return exits;
             }
         }
-
-        // 2) Otherwise, collect all available directions and sort by priority
-        Direction[] dirs = Direction.values();
-        Arrays.sort(dirs, Comparator.comparingInt((Direction d) -> getDirectionPriority(d, packetType, entryDirection))
-                .reversed());
-
-        for (Direction dir : dirs) {
-            // Don't go back
-            if (entryDirection != null && dir == entryDirection.getOpposite())
-                continue;
-            if (!canPacketGoInDirection(packetType, dir))
-                continue;
-
-            if (hasValidTargetAt(world, pos.offset(dir))) {
-                exits.add(dir);
-                break; // Take only first available
+        // Otherwise, basic CopperWire logic.
+        if (packetType == PacketType.ASCENDING) {
+            // ASCENDING priority
+            if (hasValidTargetAt(world, pos.up())) {
+                exits.add(Direction.UP);
+            } else {
+                addHorizontalDirections(world, pos, exits, entryDirection, dir -> true, true);
             }
+        } else if (packetType == PacketType.DESCENDING) {
+            // DESCENDING priority
+            if (hasValidTargetAt(world, pos.down())) {
+                exits.add(Direction.DOWN);
+            } else {
+                addHorizontalDirections(world, pos, exits, entryDirection, dir -> true, true);
+            }
+        } else {
+            // Common packet - all directions (including vertical)
+            addAllDirections(world, pos, exits, entryDirection, dir -> true, true);
         }
+
         return exits;
     }
 
@@ -72,31 +74,5 @@ public class GoldWireType extends AbstractWireType {
         if (packetType == PacketType.DESCENDING)
             return dir != Direction.UP;
         return true;
-    }
-
-    private int getDirectionPriority(Direction dir, PacketType packetType, Direction entry) {
-        // Low priority if backwards
-        if (entry != null && dir == entry.getOpposite())
-            return -1000;
-
-        // Very high priority for verticals (if packet matches type)
-        if (dir == Direction.UP && packetType == PacketType.ASCENDING)
-            return 100;
-        if (dir == Direction.DOWN && packetType == PacketType.DESCENDING)
-            return 100;
-        if (dir == Direction.UP || dir == Direction.DOWN)
-            return 50;
-
-        // Horizontal priorities: N > E > S > W (as in above example)
-        if (dir.getAxis().isHorizontal()) {
-            return switch (dir) {
-                case NORTH -> 70;
-                case EAST -> 60;
-                case SOUTH -> 50;
-                case WEST -> 40;
-                default -> 30;
-            };
-        }
-        return 0;
     }
 }

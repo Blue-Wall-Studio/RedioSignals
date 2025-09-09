@@ -1,9 +1,11 @@
 package org.BlueWallStudio.argest.wireless.receiver;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.BlueWallStudio.argest.ModTags;
 import org.BlueWallStudio.argest.packet.Packet;
 import org.BlueWallStudio.argest.packet.PacketType;
 import org.BlueWallStudio.argest.wire.WireDetector;
@@ -13,7 +15,7 @@ public class CopperGrateReceiver implements WirelessReceiver {
 
     @Override
     public boolean canReceiveWireless(World world, BlockPos pos, Packet packet) {
-        return world.getBlockState(pos).isOf(Blocks.COPPER_GRATE);
+        return world.getBlockState(pos).isIn(ModTags.COPPER_GRATE_RECEIVERS);
     }
 
     @Override
@@ -26,7 +28,8 @@ public class CopperGrateReceiver implements WirelessReceiver {
         Direction preferred = from != null ? from : packet.getCurrentDirection();
         if (preferred != null) {
             BlockPos forward = pos.offset(preferred);
-            if (WireDetector.isWire(world, forward) || WireDetector.isDecoder(world, forward)) {
+            BlockState forwardstate = world.getBlockState(forward);
+            if ( forwardstate.isIn(ModTags.ALL_WIRES) || WireDetector.isDecoder(world, forward)) {
                 return new Packet(strengths, PacketType.DESCENDING, forward, preferred, creationTick);
             }
         }
@@ -35,7 +38,8 @@ public class CopperGrateReceiver implements WirelessReceiver {
         // right ahead)
         for (Direction d : Direction.values()) {
             BlockPos np = pos.offset(d);
-            if (WireDetector.isWire(world, np) || WireDetector.isDecoder(world, np)) {
+            BlockState npstate = world.getBlockState(np);
+            if (npstate.isIn(ModTags.ALL_WIRES) || WireDetector.isDecoder(world, np)) {
                 return new Packet(strengths, PacketType.DESCENDING, np, d, creationTick);
             }
         }

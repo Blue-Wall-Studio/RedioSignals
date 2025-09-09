@@ -17,7 +17,7 @@ import java.util.EnumMap;
 public class DecoderBlockEntity extends BlockEntity {
     private final EnumMap<Direction, Integer> outputPowers = new EnumMap<>(Direction.class);
 
-    private static final int packet_DURATION = 10; // Changed from 20 to 2 ticks
+    private static final int packet_DURATION = 2; // Changed from 20 to 2 ticks
     private int ticksUntilReset = 0;
 
     public DecoderBlockEntity(BlockPos pos, BlockState state) {
