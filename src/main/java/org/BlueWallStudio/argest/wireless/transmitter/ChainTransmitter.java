@@ -136,7 +136,7 @@ public class ChainTransmitter implements WirelessTransmitter {
         // Optionally can match entryDirection.getAxis() with chain axis, if want an
         // additional checks
         BlockState state = world.getBlockState(pos);
-        if (state.isOf(Blocks.CHAIN) && state.contains(Properties.AXIS)) {
+        if (state.isIn(ModTags.IRON_TRANSMITTERS) && state.contains(Properties.AXIS)) {
             Axis chainAxis = state.get(Properties.AXIS);
             if (entryDirection != null && entryDirection.getAxis() != chainAxis) {
                 // If incoming direction isn't in the chain axis - cancel transmission

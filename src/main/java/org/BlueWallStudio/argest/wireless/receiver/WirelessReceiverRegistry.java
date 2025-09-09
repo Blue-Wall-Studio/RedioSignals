@@ -2,36 +2,52 @@ package org.BlueWallStudio.argest.wireless.receiver;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.BlueWallStudio.argest.ModTags;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
-// Wireless receivers registry
-public class WirelessReceiverRegistry {
-    private static final Map<Block, WirelessReceiver> receivers = new HashMap<>();
+public final class WirelessReceiverRegistry {
+    private WirelessReceiverRegistry() {}
 
-    public static void register(Block block, WirelessReceiver receiver) {
-        receivers.put(block, receiver);
+    // TagKey -> handler
+    private static final Map<TagKey<Block>, WirelessReceiver> TAG_RECEIVERS = new ConcurrentHashMap<>();
+
+    // Register a handler for a tag (ModTags.*)
+    public static void register(TagKey<Block> tag, WirelessReceiver receiver) {
+        Objects.requireNonNull(tag);
+        Objects.requireNonNull(receiver);
+        TAG_RECEIVERS.put(tag, receiver);
     }
 
     public static Optional<WirelessReceiver> getReceiver(BlockState state) {
-        return Optional.ofNullable(receivers.get(state.getBlock()));
+        if (state == null) return Optional.empty();
+
+        // Search by tags
+        for (Map.Entry<TagKey<Block>, WirelessReceiver> e : TAG_RECEIVERS.entrySet()) {
+            if (state.isIn(e.getKey())) {
+                return Optional.of(e.getValue());
+            }
+        }
+
+        return Optional.empty();
     }
 
     public static boolean isWirelessReceiver(World world, BlockPos pos) {
         return getReceiver(world.getBlockState(pos)).isPresent();
     }
 
-    // Built-in receivers initialization
+    // Use tag instead of ModBlocks
     public static void initializeDefaults() {
-        // Copper grate as receiver
-        register(Blocks.COPPER_GRATE, new CopperGrateReceiver());
+        // Register a handler for the tag (in resources/data/.../tags/blocks/...)
+        register(ModTags.COPPER_GRATE_RECEIVERS, new CopperGrateReceiver());
 
-        // Could add other receiverns in the future
-        // register(ModBlocks.CUSTOM_RECEIVER, new CustomReceiver());
+        // You can also register a general handler for all wireless receivers:
+        // register(ModTags.WIRELESS_RECEIVERS, new GenericTaggedWirelessReceiver());
     }
 }

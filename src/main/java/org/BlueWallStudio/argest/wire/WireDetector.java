@@ -4,6 +4,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.BlueWallStudio.argest.ModTags;
 import org.BlueWallStudio.argest.blocks.DecoderBlock;
 import org.BlueWallStudio.argest.wireless.receiver.WirelessReceiverRegistry;
 import org.BlueWallStudio.argest.wireless.transmitter.WirelessTransmitterRegistry;

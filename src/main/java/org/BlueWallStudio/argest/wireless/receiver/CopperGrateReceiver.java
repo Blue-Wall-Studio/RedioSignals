@@ -29,7 +29,7 @@ public class CopperGrateReceiver implements WirelessReceiver {
         if (preferred != null) {
             BlockPos forward = pos.offset(preferred);
             BlockState forwardstate = world.getBlockState(forward);
-            if ( forwardstate.isIn(ModTags.ALL_WIRES) || WireDetector.isDecoder(world, forward)) {
+            if (forwardstate.isIn(ModTags.ALL_WIRES) || WireDetector.isDecoder(world, forward)) {
                 return new Packet(strengths, PacketType.DESCENDING, forward, preferred, creationTick);
             }
         }
