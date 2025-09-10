@@ -2,35 +2,53 @@ package org.BlueWallStudio.argest.wireless.transmitter;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.BlueWallStudio.argest.ModTags;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 // Wireless transmitters registry
-public class WirelessTransmitterRegistry {
-    private static final Map<Block, WirelessTransmitter> transmitters = new HashMap<>();
+public final class WirelessTransmitterRegistry {
+    private WirelessTransmitterRegistry() {}
 
-    public static void register(Block block, WirelessTransmitter transmitter) {
-        transmitters.put(block, transmitter);
+    // TagKey -> handler
+    private static final Map<TagKey<Block>, WirelessTransmitter> TAG_TRANSMITTERS = new ConcurrentHashMap<>();
+
+    // Register a handler for a tag (ModTags.*)
+    public static void register(TagKey<Block> tag, WirelessTransmitter transmitter) {
+        Objects.requireNonNull(tag);
+        Objects.requireNonNull(transmitter);
+        TAG_TRANSMITTERS.put(tag, transmitter);
     }
 
     public static Optional<WirelessTransmitter> getTransmitter(BlockState state) {
-        return Optional.ofNullable(transmitters.get(state.getBlock()));
+        if (state == null) return Optional.empty();
+
+        // Search by tags
+        for (Map.Entry<TagKey<Block>, WirelessTransmitter> e : TAG_TRANSMITTERS.entrySet()) {
+            if (state.isIn(e.getKey())) {
+                return Optional.of(e.getValue());
+            }
+        }
+
+        return Optional.empty();
     }
 
     public static boolean isWirelessTransmitter(World world, BlockPos pos) {
         return getTransmitter(world.getBlockState(pos)).isPresent();
     }
 
+    // Use tag instead of ModBlocks
     public static void initializeDefaults() {
-        // Register chain as transmitter
-        register(Blocks.CHAIN, new ChainTransmitter());
+        // Register chain as transmitter using tag
+        register(ModTags.IRON_TRANSMITTERS, new ChainTransmitter());
 
         // Add other transmitters in the future
-        // register(ModBlocks.RADIO_ANTENNA, new AntennaTransmitter());
+        // register(ModTags.ANTENNA_TRANSMITTERS, new AntennaTransmitter());
     }
 }

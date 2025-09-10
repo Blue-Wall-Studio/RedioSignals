@@ -1,17 +1,13 @@
 package org.BlueWallStudio.argest.wireless.transmitter;
 
-import java.util.Set;
 import net.minecraft.world.World;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.Block;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.state.property.Properties;
 import org.BlueWallStudio.argest.ModTags;
 import org.BlueWallStudio.argest.packet.Packet;
-import org.BlueWallStudio.argest.wire.WireDetector;
 import org.BlueWallStudio.argest.wireless.WirelessTransmissionConfig;
 
 // Transmitter implementation for the chain (with axis check)
@@ -33,7 +29,7 @@ public class ChainTransmitter implements WirelessTransmitter {
 
     @Override
     public Packet processWirelessTransmission(World world, BlockPos pos, Packet packet,
-            Direction entryDirection) {
+                                              Direction entryDirection) {
 
         if (!this.canTransmit(world, pos, packet)) {
             return null;
@@ -62,18 +58,17 @@ public class ChainTransmitter implements WirelessTransmitter {
 
     // Helper function for processWirelessTransmission
     private BlockPos findWirelessTarget(World world, BlockPos startPos, WirelessTransmissionConfig config,
-            Packet ignoredPacket) {
+                                        Packet ignoredPacket) {
         Direction dir = config.transmissionDirection();
         int maxRange = config.maxRange();
         boolean canPenetrate = config.canPenetrate();
-        Set<Block> blockingBlocks = config.blockingBlocks();
 
         for (int i = 1; i <= maxRange; i++) {
             BlockPos checkPos = startPos.offset(dir, i);
             BlockState checkState = world.getBlockState(checkPos);
-            Block checkBlock = checkState.getBlock();
 
-            if (blockingBlocks.contains(checkBlock)) {
+            // Use the config's isBlocked method instead of checking specific blocks
+            if (config.isBlocked(checkState)) {
                 break;
             }
 
@@ -111,7 +106,8 @@ public class ChainTransmitter implements WirelessTransmitter {
 
         for (Direction dir : Direction.values()) {
             BlockPos neighbor = chainPos.offset(dir);
-            if (!WireDetector.isWire(world, neighbor))
+            BlockState neighborState = world.getBlockState(neighbor);
+            if (!neighborState.isIn(ModTags.ALL_WIRES))
                 continue;
 
             // If axis is known, require direction axis to match with chain axis
@@ -119,7 +115,7 @@ public class ChainTransmitter implements WirelessTransmitter {
                 if (dir.getAxis() == chainAxis) {
                     return true;
                 } else {
-                    // Wire found, but in goes by incompatioble axis - ignore
+                    // Wire found, but in goes by incompatible axis - ignore
                     continue;
                 }
             } else {
@@ -132,7 +128,7 @@ public class ChainTransmitter implements WirelessTransmitter {
 
     @Override
     public WirelessTransmissionConfig getTransmissionConfig(World world, BlockPos pos, Packet packet,
-            Direction entryDirection) {
+                                                            Direction entryDirection) {
         // Optionally can match entryDirection.getAxis() with chain axis, if want an
         // additional checks
         BlockState state = world.getBlockState(pos);
