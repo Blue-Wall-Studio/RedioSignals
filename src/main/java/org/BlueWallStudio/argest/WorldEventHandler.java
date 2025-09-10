@@ -21,4 +21,8 @@ public class WorldEventHandler {
             }
         });
     }
+
+    public static void configReload() {
+        INTERVAL = ModConfig.getInstance().packetProcessingDelay;
+    }
 }

@@ -1,13 +1,13 @@
 package org.BlueWallStudio.argest.blocks.entity;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.World;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import org.BlueWallStudio.argest.blocks.DecoderBlock;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
 import org.BlueWallStudio.argest.packet.Packet;
@@ -17,7 +17,7 @@ import java.util.EnumMap;
 public class DecoderBlockEntity extends BlockEntity {
     private final EnumMap<Direction, Integer> outputPowers = new EnumMap<>(Direction.class);
 
-    private static final int packet_DURATION = 2; // Changed from 20 to 2 ticks
+    private static final int PACKET_DURATION = 2; // Changed from 20 to 2 ticks
     private int ticksUntilReset = 0;
 
     public DecoderBlockEntity(BlockPos pos, BlockState state) {
@@ -73,7 +73,7 @@ public class DecoderBlockEntity extends BlockEntity {
         outputPowers.put(facing, strengths[1]);
         outputPowers.put(right, strengths[2]);
 
-        ticksUntilReset = packet_DURATION;
+        ticksUntilReset = PACKET_DURATION;
 
         if (world instanceof ServerWorld serverWorld) {
             // Update neighbors and trigger block updates like redstone does

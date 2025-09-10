@@ -138,4 +138,8 @@ public class PacketVisualizer {
         // In final implementation we can use DisplayEntity.TextDisplayEntity
         // and manage its position via NBT or recreation
     }
+
+    public static void configReload() {
+        config = ModConfig.getInstance();
+    }
 }

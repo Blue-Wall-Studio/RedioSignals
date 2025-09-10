@@ -210,4 +210,8 @@ public class PacketManager {
                 .getTransmitter(world.getBlockState(pos));
         return transmitter.get().processWirelessTransmission(world, pos, packet, entryDirection);
     }
+
+    public static void configReload() {
+        config = ModConfig.getInstance();
+    }
 }

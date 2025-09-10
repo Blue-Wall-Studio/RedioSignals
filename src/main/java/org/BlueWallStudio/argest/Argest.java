@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import org.BlueWallStudio.argest.debug.DebugCommand;
+import org.BlueWallStudio.argest.debug.CommandRegister;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
 import org.BlueWallStudio.argest.config.ModConfig;
 import org.BlueWallStudio.argest.network.NetworkHandler;
@@ -40,7 +40,8 @@ public class Argest implements ModInitializer {
 
         // Commands registration
         CommandRegistrationCallback.EVENT
-                .register((dispatcher, registryAccess, environment) -> DebugCommand.register(dispatcher, environment));
+                .register(
+                        (dispatcher, registryAccess, environment) -> CommandRegister.register(dispatcher, environment));
 
         System.out.println("[Argest] Mod initialized successfully!");
     }

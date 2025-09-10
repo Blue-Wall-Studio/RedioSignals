@@ -1,19 +1,20 @@
 package org.BlueWallStudio.argest.blocks.entity;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.world.World;
+import net.minecraft.server.world.ServerWorld;
 import org.BlueWallStudio.argest.blocks.EncoderBlock;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
 import org.BlueWallStudio.argest.packet.PacketManager;
 import org.BlueWallStudio.argest.packet.Packet;
 import org.BlueWallStudio.argest.packet.PacketType;
 import org.BlueWallStudio.argest.wire.WireDetector;
+import org.BlueWallStudio.argest.config.ModConfig;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -26,7 +27,8 @@ public class EncoderBlockEntity extends BlockEntity {
     private final EnumSet<Direction> outputDirections = EnumSet.noneOf(Direction.class);
 
     private static final int CONNECTION_UPDATE_INTERVAL = 20;
-    private static final int INPUT_PROCESS_INTERVAL = 10;
+    private static int INPUT_PROCESS_INTERVAL = ModConfig.getInstance().packetEncodingDelay;
+    private int count;
 
     private int tickCounter = 0;
     private boolean needsConnectionUpdate = true;
@@ -57,11 +59,14 @@ public class EncoderBlockEntity extends BlockEntity {
             entity.needsConnectionUpdate = false;
         }
 
-        // Process inputs + try to transmit every INPUT_PROCESS_INTERVAL ticks
-        if (entity.tickCounter % INPUT_PROCESS_INTERVAL == 0) {
+        // Process inputs + try to transmit every INPUT_PROCESS_INTERVAL ticks (if not
+        // -1, otherwise only once per activation)
+        if (entity.count == entity.INPUT_PROCESS_INTERVAL) {
+            entity.count = 0;
             entity.updateInputs((ServerWorld) world);
             entity.tryTransmitPacket((ServerWorld) world);
         }
+        entity.count++;
     }
 
     /**
@@ -198,6 +203,10 @@ public class EncoderBlockEntity extends BlockEntity {
                 inputPowers.put(dir, inputsNbt.getInt(dir.getName()));
             }
         }
+    }
+
+    public static void configReload() {
+        INPUT_PROCESS_INTERVAL = ModConfig.getInstance().packetEncodingDelay;
     }
 
     private enum ConnectionType {

@@ -4,13 +4,16 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
-import net.fabricmc.loader.api.FabricLoader;
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import net.fabricmc.loader.api.FabricLoader;
+import org.BlueWallStudio.argest.blocks.entity.EncoderBlockEntity;
+import org.BlueWallStudio.argest.WorldEventHandler;
+import org.BlueWallStudio.argest.packet.PacketManager;
+import org.BlueWallStudio.argest.debug.PacketVisualizer;
 
 public class ModConfig {
     private static ModConfig instance;
@@ -97,6 +100,11 @@ public class ModConfig {
         synchronized (ModConfig.class) {
             instance = load();
         }
+
+        EncoderBlockEntity.configReload();
+        WorldEventHandler.configReload();
+        PacketManager.configReload();
+        PacketVisualizer.configReload();
     }
 
     @Override

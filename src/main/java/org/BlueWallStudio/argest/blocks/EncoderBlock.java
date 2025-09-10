@@ -11,7 +11,6 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.block.WireOrientation;
 import org.BlueWallStudio.argest.blocks.entity.EncoderBlockEntity;
@@ -56,15 +55,16 @@ public class EncoderBlock extends BlockWithEntity {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state,
-                                                                  BlockEntityType<T> type) {
+            BlockEntityType<T> type) {
         // server-only ticker; returns null on client
-        return world.isClient ? null : BlockWithEntity.validateTicker(type, ModBlocks.ENCODER_BLOCK_ENTITY,
-                EncoderBlockEntity::tick);
+        return world.isClient ? null
+                : BlockWithEntity.validateTicker(type, ModBlocks.ENCODER_BLOCK_ENTITY,
+                        EncoderBlockEntity::tick);
     }
 
     @Override
     public void neighborUpdate(BlockState state, World world, BlockPos pos,
-                               Block sourceBlock, @Nullable WireOrientation sourcePos, boolean notify) {
+            Block sourceBlock, @Nullable WireOrientation sourcePos, boolean notify) {
         if (!world.isClient) {
             BlockEntity be = world.getBlockEntity(pos);
             if (be instanceof EncoderBlockEntity encoder) {
@@ -74,8 +74,6 @@ public class EncoderBlock extends BlockWithEntity {
         }
         super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
     }
-
-
 
     @Override
     public boolean isTransparent(BlockState state) {
