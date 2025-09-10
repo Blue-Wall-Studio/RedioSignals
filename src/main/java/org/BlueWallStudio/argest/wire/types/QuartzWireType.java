@@ -25,32 +25,7 @@ public class QuartzWireType extends AbstractWireType {
 
     @Override
     public boolean processPacket(World world, BlockPos pos, Packet packet) {
-        if (!(world instanceof ServerWorld serverWorld)) {
-            return true;
-        }
-
-        int currentTick = serverWorld.getServer().getTicks();
-        String packetKey = getPacketKey(packet);
-
-        // temp debug print to showcase stepRemaining usage
-        Argest.LOGGER.info("Packet steps remaining: {}", packet.stepsRemaining);
-
-        // Check if this packet has already moved this tick (anywhere in the circuit)
-        Integer lastMoveTick = packetMovedThisTick.get(packetKey);
-        if (lastMoveTick != null && lastMoveTick == currentTick) {
-            // Packet already moved this tick - stop it on quartz until next tick
-            return false;
-        }
-
-        // Mark that this packet has moved this tick
-        packetMovedThisTick.put(packetKey, currentTick);
-
-        // Clean up old entries to prevent memory leaks
-        cleanupOldEntries(currentTick);
-
-        // If this is the first movement this tick and it's on quartz,
-        // allow it to continue like normal wire
-        return true;
+		return true;
     }
 
     @Override
@@ -60,10 +35,13 @@ public class QuartzWireType extends AbstractWireType {
 
     @Override
     public List<Direction> getExitDirections(World world, BlockPos pos,
-            Packet packet, Direction entryDirection) {
+                                             Packet packet, Direction entryDirection) {
         List<Direction> exits = new ArrayList<>();
         PacketType packetType = packet.getPacketType();
-
+		 if (packet.stepsRemaining < 8) {
+             packet.stepsRemaining = 99;
+			 return exits;
+			}
         // Quartz behaves like normal wire when allowing movement
         switch (packetType) {
             case ASCENDING:
@@ -111,4 +89,8 @@ public class QuartzWireType extends AbstractWireType {
         // Remove entries older than 10 ticks
         packetMovedThisTick.entrySet().removeIf(entry -> currentTick - entry.getValue() > 10);
     }
+
+    /**
+     * Cleans up old delay entries to prevent memory leaks
+     */
 }

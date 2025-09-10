@@ -161,15 +161,20 @@ public class PacketManager {
             return null;
         }
 
+        Set<Packet> newPackets = new HashSet<>();
         // Search for exits (next valid circuit blocks) and move packet to them
         List<Direction> exits = wire.getExitDirections(world, currentPos, packet, currentDir);
         if (exits.isEmpty()) {
+            if (packet.stepsRemaining == 99) {
+                packet.stepsRemaining = 0;
+                newPackets.add(packet);
+			    return newPackets;
+			}
             DebugManager.getInstance().onPacketDied(world, packet, "No exit directions");
 
             return null;
         }
 
-        Set<Packet> newPackets = new HashSet<>();
         for (Direction exit : exits) {
             BlockPos nextPos = currentPos.offset(exit);
 
