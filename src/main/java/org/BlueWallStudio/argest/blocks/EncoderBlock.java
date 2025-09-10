@@ -5,6 +5,8 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
@@ -12,6 +14,7 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.block.WireOrientation;
 import org.BlueWallStudio.argest.blocks.entity.EncoderBlockEntity;
 import org.jetbrains.annotations.Nullable;
@@ -23,6 +26,25 @@ public class EncoderBlock extends BlockWithEntity {
     public EncoderBlock(Settings settings) {
         super(settings);
         this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
+    }
+
+    @Override
+    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        VoxelShape shape = VoxelShapes.empty();
+
+        double t = 0.1; // Wall thickness
+
+        // bottom and top
+        shape = VoxelShapes.union(shape, VoxelShapes.cuboid(t, 0, t, 1 - t, t, 1 - t));
+        shape = VoxelShapes.union(shape, VoxelShapes.cuboid(t, 1 - t, t, 1 - t, 1, 1 - t));
+
+        // sides
+        shape = VoxelShapes.union(shape, VoxelShapes.cuboid(0, 0, 0, t, 1, 1)); // left
+        shape = VoxelShapes.union(shape, VoxelShapes.cuboid(1 - t, 0, 0, 1, 1, 1)); // right
+        shape = VoxelShapes.union(shape, VoxelShapes.cuboid(0, 0, 0, 1, 1, t)); // front
+        shape = VoxelShapes.union(shape, VoxelShapes.cuboid(0, 0, 1 - t, 1, 1, 1)); // back
+
+        return shape;
     }
 
     @Override
@@ -73,10 +95,5 @@ public class EncoderBlock extends BlockWithEntity {
             }
         }
         super.neighborUpdate(state, world, pos, sourceBlock, sourcePos, notify);
-    }
-
-    @Override
-    public boolean isTransparent(BlockState state) {
-        return true;
     }
 }
