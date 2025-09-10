@@ -84,6 +84,8 @@ public class PacketManager {
             Packet packet = step.packet;
             int remaining = step.stepsRemaining;
 
+            packet.stepsRemaining = remaining;
+
             if (remaining <= 0) {
                 newPackets.add(packet);
                 continue;
@@ -191,21 +193,21 @@ public class PacketManager {
     }
 
     private static void handleDecoderReception(ServerWorld world, Packet packet, BlockPos pos,
-                                               Direction entryDirection) {
+            Direction entryDirection) {
         if (world.getBlockEntity(pos) instanceof DecoderBlockEntity decoder) {
             decoder.receivePacket(packet, entryDirection);
         }
     }
 
     private static Packet handleWirelessReception(ServerWorld world, Packet packet, BlockPos pos,
-                                                  Direction entryDirection) {
+            Direction entryDirection) {
         Optional<WirelessReceiver> receiver = WirelessReceiverRegistry.getReceiver(world.getBlockState(pos));
 
         return receiver.get().processWirelessReception(world, pos, packet, entryDirection);
     }
 
     private static Packet handleWirelessTransmission(ServerWorld world, Packet packet, BlockPos pos,
-                                                     Direction entryDirection) {
+            Direction entryDirection) {
         Optional<WirelessTransmitter> transmitter = WirelessTransmitterRegistry
                 .getTransmitter(world.getBlockState(pos));
         return transmitter.get().processWirelessTransmission(world, pos, packet, entryDirection);

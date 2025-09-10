@@ -15,6 +15,7 @@ public class Packet {
     private final Direction currentDirection;
     private final int creationTick; // Server tick for packet creation
     private final int totalStrength;
+    public int stepsRemaining = 0;
 
     public Packet(int[] strengths, PacketType type, BlockPos pos, Direction dir, int creationTick) {
         this.packetStrengths = strengths;

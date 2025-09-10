@@ -5,6 +5,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.BlueWallStudio.argest.Argest;
 import org.BlueWallStudio.argest.ModTags;
 import org.BlueWallStudio.argest.packet.Packet;
 import org.BlueWallStudio.argest.packet.PacketType;
@@ -13,7 +14,8 @@ import java.util.*;
 
 public class QuartzWireType extends AbstractWireType {
 
-    // Static map to track packets that have already moved this tick (anywhere, not just on quartz)
+    // Static map to track packets that have already moved this tick (anywhere, not
+    // just on quartz)
     private static final Map<String, Integer> packetMovedThisTick = new HashMap<>();
 
     @Override
@@ -29,6 +31,9 @@ public class QuartzWireType extends AbstractWireType {
 
         int currentTick = serverWorld.getServer().getTicks();
         String packetKey = getPacketKey(packet);
+
+        // temp debug print to showcase stepRemaining usage
+        Argest.LOGGER.info("Packet steps remaining: {}", packet.stepsRemaining);
 
         // Check if this packet has already moved this tick (anywhere in the circuit)
         Integer lastMoveTick = packetMovedThisTick.get(packetKey);
@@ -55,7 +60,7 @@ public class QuartzWireType extends AbstractWireType {
 
     @Override
     public List<Direction> getExitDirections(World world, BlockPos pos,
-                                             Packet packet, Direction entryDirection) {
+            Packet packet, Direction entryDirection) {
         List<Direction> exits = new ArrayList<>();
         PacketType packetType = packet.getPacketType();
 
@@ -104,7 +109,6 @@ public class QuartzWireType extends AbstractWireType {
      */
     private void cleanupOldEntries(int currentTick) {
         // Remove entries older than 10 ticks
-        packetMovedThisTick.entrySet().removeIf(entry ->
-                currentTick - entry.getValue() > 10);
+        packetMovedThisTick.entrySet().removeIf(entry -> currentTick - entry.getValue() > 10);
     }
 }
