@@ -10,6 +10,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import org.BlueWallStudio.argest.blocks.DecoderBlock;
 import org.BlueWallStudio.argest.blocks.ModBlocks;
+import org.BlueWallStudio.argest.config.ModConfig;
 import org.BlueWallStudio.argest.packet.Packet;
 
 import java.util.EnumMap;
@@ -17,7 +18,7 @@ import java.util.EnumMap;
 public class DecoderBlockEntity extends BlockEntity {
     private final EnumMap<Direction, Integer> outputPowers = new EnumMap<>(Direction.class);
 
-    private static final int PACKET_DURATION = 2; // Changed from 20 to 2 ticks
+    private static int PACKET_DURATION = ModConfig.getInstance().packetEncodingDelay; // Changed from 20 to 2 ticks
     private int ticksUntilReset = 0;
 
     public DecoderBlockEntity(BlockPos pos, BlockState state) {
@@ -166,5 +167,9 @@ public class DecoderBlockEntity extends BlockEntity {
             for (Direction d : Direction.values())
                 outputPowers.put(d, 0);
         }
+    }
+
+    public static void configReload() {
+        PACKET_DURATION = ModConfig.getInstance().packetEncodingDelay;
     }
 }

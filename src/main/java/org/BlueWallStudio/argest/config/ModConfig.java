@@ -10,6 +10,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import net.fabricmc.loader.api.FabricLoader;
+import org.BlueWallStudio.argest.blocks.entity.DecoderBlockEntity;
 import org.BlueWallStudio.argest.blocks.entity.EncoderBlockEntity;
 import org.BlueWallStudio.argest.WorldEventHandler;
 import org.BlueWallStudio.argest.packet.PacketManager;
@@ -34,6 +35,7 @@ public class ModConfig {
     public int packetProcessingDelay = 2; // Every 2 ticks
     public int maxPacketsPerTick = 100;
     public int packetEncodingDelay = 2; // Every 2 ticks
+    public int packetDecodingDelay = 2; //Every 2 ticks
 
     private ModConfig() {
         // Private constructor for Singleton
@@ -94,6 +96,7 @@ public class ModConfig {
         packetProcessingDelay = Math.max(1, packetProcessingDelay);
         maxPacketsPerTick = Math.max(-1, maxPacketsPerTick);
         packetEncodingDelay = Math.max(1, packetEncodingDelay);
+        packetDecodingDelay = Math.max(1, packetDecodingDelay);
     }
 
     public void reload() {
@@ -102,6 +105,7 @@ public class ModConfig {
         }
 
         EncoderBlockEntity.configReload();
+        DecoderBlockEntity.configReload();
         WorldEventHandler.configReload();
         PacketManager.configReload();
         PacketVisualizer.configReload();

@@ -129,14 +129,16 @@ public class ChainTransmitter implements WirelessTransmitter {
     @Override
     public WirelessTransmissionConfig getTransmissionConfig(World world, BlockPos pos, Packet packet,
                                                             Direction entryDirection) {
-        // Optionally can match entryDirection.getAxis() with chain axis, if want an
-        // additional checks
         BlockState state = world.getBlockState(pos);
+
+        // Проверяем совместимость оси цепи с направлением входа
         if (state.isIn(ModTags.IRON_TRANSMITTERS) && state.contains(Properties.AXIS)) {
             Axis chainAxis = state.get(Properties.AXIS);
+
+            // КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Если направление входа не совместимо с осью цепи,
+            // возвращаем null, чтобы система попробовала другие трансмиттеры
             if (entryDirection != null && entryDirection.getAxis() != chainAxis) {
-                // If incoming direction isn't in the chain axis - cancel transmission
-                return null; // or return config that means "don't transmit"
+                return null;
             }
         }
 
@@ -147,5 +149,27 @@ public class ChainTransmitter implements WirelessTransmitter {
     @Override
     public int getTransmitterPriority() {
         return 100;
+    }
+
+    /**
+     * НОВЫЙ МЕТОД: Проверяет, может ли этот конкретный трансмиттер обработать пакет
+     * с данным направлением входа. Это позволяет системе выбрать правильный трансмиттер
+     * среди нескольких доступных.
+     */
+    public boolean canHandleEntryDirection(World world, BlockPos pos, Direction entryDirection) {
+        BlockState state = world.getBlockState(pos);
+
+        if (!state.isIn(ModTags.IRON_TRANSMITTERS)) {
+            return false;
+        }
+
+        // Если у цепи есть ось, проверяем совместимость
+        if (state.contains(Properties.AXIS)) {
+            Axis chainAxis = state.get(Properties.AXIS);
+            return entryDirection == null || entryDirection.getAxis() == chainAxis;
+        }
+
+        // Если оси нет, принимаем любое направление
+        return true;
     }
 }
