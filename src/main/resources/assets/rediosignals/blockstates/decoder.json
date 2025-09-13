@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east,": {
+      "model": "rediosignals:block/decoder",
+      "y": 90
+    },
+    "facing=north,": {
+      "model": "rediosignals:block/decoder"
+    },
+    "facing=south,": {
+      "model": "rediosignals:block/decoder",
+      "y": 180
+    },
+    "facing=west,": {
+      "model": "rediosignals:block/decoder",
+      "y": 270
+    }
+  }
+}

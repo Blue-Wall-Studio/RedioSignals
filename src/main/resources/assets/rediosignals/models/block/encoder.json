@@ -1,0 +1,25 @@
+{
+    "parent": "block/block",
+    "textures": {
+        "bottom": "rediosignals:block/encoder_bottom",
+        "top": "rediosignals:block/encoder_top",
+        "left": "rediosignals:block/encoder_left",
+        "right": "rediosignals:block/encoder_right",
+        "front": "rediosignals:block/encoder_front",
+        "back": "rediosignals:block/encoder_back",
+        "particle": "rediosignals:block/encoder_back"
+    },
+    "elements": [
+        {   "from": [ 0, 0, 0 ],
+            "to": [ 16, 16, 16 ],
+            "faces": {
+                "down":  { "uv": [ 0, 0, 16, 16 ], "texture": "#bottom", "cullface": "down" },
+                "up":    { "uv": [ 0, 0, 16, 16 ], "texture": "#top", "cullface": "up" },
+                "north": { "uv": [ 0, 0, 16, 16 ], "texture": "#front", "cullface": "north" },
+                "south": { "uv": [ 0, 0, 16, 16 ], "texture": "#back", "cullface": "south" },
+                "west":  { "uv": [ 0, 0, 16, 16 ], "texture": "#left", "cullface": "west" },
+                "east":  { "uv": [ 0, 0, 16, 16 ], "texture": "#right", "cullface": "east" }
+            }
+        }
+    ]
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "rediosignals",
+  "version": "${version}",
+  "name": "Redio Signals",
+  "description": "Redio Signals introduces a new natural phenomenon into the game — rediowaves. With their help, you can transmit information over long distances, build complex mechanisms, and do many other things we won’t reveal just yet.\n\nThe exact nature of rediowaves is unknown. That’s why in this mod your task is to experiment, build hypotheses, test them, make mistakes, and gradually study the nature of this invisible carrier of information.\n\nThe mod is currently in early beta, so most of the planned content hasn’t been implemented yet.\n\n",
+  "authors": ["AlmazmanElytra", "stargest", "nijon4rch", "Din37r"],
+  "contact": {
+    "homepage": "https://modrinth.com/project/redio-signals",
+    "issues": "https://github.com/Blue-Wall-Studio/RedioSignals/issues",
+    "sources": "https://github.com/Blue-Wall-Studio/RedioSignals"
+  },
+  "license": "GNU GPLv3",
+  "icon": "assets/rediosignals/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "org.BlueWallStudio.rediosignals.client.RedioSignalsDataGenerator"
+    ],
+    "client": [
+      "org.BlueWallStudio.rediosignals.client.RedioSignalsClient"
+    ],
+    "main": [
+      "org.BlueWallStudio.rediosignals.RedioSignals"
+    ]
+  },
+  "mixins": [
+    "rediosignals.mixins.json",
+    {
+      "config": "rediosignals.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
