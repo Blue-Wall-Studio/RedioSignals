@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# argest
-=======
 **Redio Signals** introduces a new natural phenomenon into the game — rediowaves. With their help, you can transmit information over long distances, build complex mechanisms, and do many other things we won’t reveal just yet.
 
 The exact nature of rediowaves is unknown. That’s why in this mod your task is to experiment, build hypotheses, test them, make mistakes, and gradually study the nature of this invisible carrier of information.
@@ -19,4 +16,3 @@ To start studying rediowaves, use the starter guide:
 The exact list of blocks in which solid-type rediowaves can exist is unknown, so you are free to experiment and test different blocks for their redioconductivity.
 
 **Note:** since the mod is still in beta, this list may be expanded and changed. In particular, the Chain is currently used as a converter from solid type to air type only temporarily.
->>>>>>> testing
