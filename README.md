@@ -15,4 +15,4 @@ To start studying rediowaves, use the starter guide:
 
 The exact list of blocks in which solid-type rediowaves can exist is unknown, so you are free to experiment and test different blocks for their redioconductivity.
 
-**Note:** since the mod is still in beta, this list may be expanded and changed. In particular, the Chain is currently used as a converter from solid type to air type only temporarily.
+**Note:** since the mod is still in beta, this list may be expanded and changed. For example, chain is currently used as a converter from solid type to air type signal, but this will be changed in the future.
